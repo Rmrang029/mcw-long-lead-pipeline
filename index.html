@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCW Long Lead Pipeline — Vancouver Office</title>
+<style>
+  :root {
+    --mcw-green: #00863F;
+    --mcw-green-light: #E8F5EE;
+    --mcw-green-hover: #006B32;
+    --black-100: #231F20;
+    --black-80: #58595B;
+    --border-gray: #CCCCCC;
+    --bg: #F8F9FA;
+    --white: #FFFFFF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--black-100);
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--mcw-green);
+    color: var(--white);
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+  .header .subtitle { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+  .header .meta {
+    text-align: right;
+    font-size: 12px;
+    opacity: 0.8;
+    line-height: 1.6;
+  }
+
+  /* ── Summary Cards ── */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 24px 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .card {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 20px 24px;
+    border-left: 4px solid var(--mcw-green);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--black-80); margin-bottom: 6px; }
+  .card .value { font-size: 28px; font-weight: 700; color: var(--mcw-green); }
+  .card .detail { font-size: 12px; color: var(--black-80); margin-top: 4px; }
+
+  /* ── Sector Breakdown ── */
+  .section {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px 24px;
+  }
+  .section h2 {
+    font-size: 16px;
+    color: var(--mcw-green);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--mcw-green);
+  }
+  .sector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .sector-chip {
+    background: var(--white);
+    border-radius: 6px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    font-size: 13px;
+  }
+  .sector-chip .name { color: var(--black-100); font-weight: 600; }
+  .sector-chip .count {
+    background: var(--mcw-green-light);
+    color: var(--mcw-green);
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  /* ── Filter Controls ── */
+  .controls {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px 16px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .controls label { font-size: 12px; font-weight: 600; color: var(--black-80); text-transform: uppercase; letter-spacing: 0.5px; }
+  .controls select, .controls input {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-gray);
+    border-radius: 4px;
+    background: var(--white);
+  }
+  .controls input { width: 220px; }
+
+  /* ── Table ── */
+  .table-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px 40px;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    background: var(--white);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  thead th {
+    background: var(--mcw-green);
+    color: var(--white);
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  thead th:hover { background: var(--mcw-green-hover); }
+  thead th .sort-arrow { margin-left: 4px; font-size: 10px; opacity: 0.7; }
+  tbody tr { border-bottom: 1px solid #EEE; }
+  tbody tr:nth-child(even) { background: var(--mcw-green-light); }
+  tbody tr:hover { background: #D4EDDA; }
+  tbody td { padding: 10px 12px; vertical-align: top; color: var(--black-80); }
+  tbody td:first-child { font-weight: 600; color: var(--black-100); min-width: 260px; }
+
+  /* Priority badge */
+  .priority {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 11px;
+    text-align: center;
+    min-width: 42px;
+  }
+  .p-high { background: #00863F; color: #fff; }
+  .p-med { background: #FFC107; color: #231F20; }
+  .p-low { background: #E0E0E0; color: #58595B; }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .s-identified { background: #D4EDDA; color: #00863F; }
+  .s-monitoring { background: #FFF3CD; color: #856404; }
+  .s-archived { background: #E0E0E0; color: #58595B; }
+
+  /* ── Footer ── */
+  .footer {
+    background: var(--black-100);
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+    padding: 16px 40px;
+    font-size: 11px;
+  }
+  .footer strong { color: rgba(255,255,255,0.85); }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .header { padding: 20px; }
+    .summary, .section, .controls, .table-wrap { padding-left: 16px; padding-right: 16px; }
+    .header h1 { font-size: 18px; }
+    .card .value { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>MCW CONSULTANTS — LONG LEAD PIPELINE</h1>
+    <div class="subtitle">Vancouver Office — Business Development Tracker</div>
+  </div>
+  <div class="meta">
+    <div>Last Scan: <strong id="scanDate">March 23, 2026</strong></div>
+    <div>Next Scan: <strong id="nextScan">April 1, 2026</strong></div>
+    <div>Sources Monitored: <strong>119</strong></div>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="summary" id="summaryCards"></div>
+
+<!-- Sector Breakdown -->
+<div class="section">
+  <h2>Pipeline by Sector</h2>
+  <div class="sector-grid" id="sectorGrid"></div>
+</div>
+
+<!-- Filter Controls -->
+<div class="controls">
+  <label>Filter:</label>
+  <select id="filterSector"><option value="">All Sectors</option></select>
+  <select id="filterStatus"><option value="">All Statuses</option></select>
+  <input type="text" id="searchBox" placeholder="Search opportunities...">
+</div>
+
+<!-- Pipeline Table -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)">Opportunity <span class="sort-arrow">▼</span></th>
+        <th onclick="sortTable(1)">Sector <span class="sort-arrow">▼</span></th>
+        <th onclick="sortTable(2)">Client / Owner <span class="sort-arrow">▼</span></th>
+        <th onclick="sortTable(3)">Est. Value <span class="sort-arrow">▼</span></th>
+        <th onclick="sortTable(4)">M&amp;E Fee <span class="sort-arrow">▼</span></th>
+        <th onclick="sortTable(5)">Timing <span class="sort-arrow">▼</span></th>
+        <th onclick="sortTable(6)">Status <span class="sort-arrow">▼</span></th>
+        <th onclick="sortTable(7)">Priority <span class="sort-arrow">▼</span></th>
+        <th onclick="sortTable(8)">Next Action <span class="sort-arrow">▼</span></th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <strong>MCW Consultants Ltd.</strong> — Long Lead Fishing Plan &nbsp;|&nbsp;
+  Confidential — Internal Use Only &nbsp;|&nbsp;
+  Auto-generated by MCW Pipeline Scanner
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// PIPELINE DATA — updated by each scan run
+// ══════════════════════════════════════════════════════════════
+const SCAN_DATE = "March 23, 2026";
+const NEXT_SCAN = "April 1, 2026";
+const SOURCES_COUNT = 119;
+
+const opportunities = [
+  {name:"Vancouver General Hospital — Campus Redevelopment", sector:"Healthcare", client:"Vancouver Coastal Health / PHSA", value:"$2B+ (multi-phase)", fee:"$8M–$15M", timing:"Phase 1 construction 2027+", status:"Identified", priority:22, action:"Monitor rezoning public hearing schedule; identify architect team"},
+  {name:"Skeena Terrace Redevelopment — 1,700 Units / 7 Phases", sector:"Residential High-Rise", client:"BC Housing", value:"$800M+ (all phases)", fee:"$3M–$6M", timing:"Phases 2–7 design 2027–2035+", status:"Identified", priority:21, action:"Reach out to BC Housing and Perkins&Will re: M&E teaming for Phase 2+"},
+  {name:"Surrey City Centre Arena — 10,000 Seats", sector:"Sports & Recreation", client:"City of Surrey", value:"$200M+", fee:"$1M–$2M", timing:"RFP due May 2026; construction 2027", status:"Identified", priority:20, action:"Monitor RFP release; identify shortlisted design-build teams"},
+  {name:"UBC Student Residence Complex — Lower Mall Precinct", sector:"Education", client:"University of British Columbia", value:"$560M", fee:"$2M–$4M", timing:"Construction start Fall 2026", status:"Identified", priority:20, action:"Contact UBC Infrastructure Development re: M&E consultant selection"},
+  {name:"BCIT Trades and Technology Complex — Phase 4", sector:"Education", client:"BCIT / Province of BC", value:"$220M (~$50M Phase 4)", fee:"$200K–$500K", timing:"Phase 4 construction Summer 2026", status:"Identified", priority:19, action:"Inquire about M&E consultant status for Concert Properties Centre building"},
+  {name:"Brentwood Community Centre — Burnaby", sector:"Sports & Recreation", client:"City of Burnaby", value:"$146M", fee:"$700K–$1.2M", timing:"Construction start Winter 2026", status:"Identified", priority:19, action:"Identify design team and M&E consultant status"},
+  {name:"Richmond Hospital Redevelopment — Acute Care Tower", sector:"Healthcare", client:"VCH / Province of BC", value:"$500M+", fee:"$2M–$5M", timing:"Phase 2 procurement TBD", status:"Identified", priority:19, action:"Monitor Phase 2 procurement timeline; connect with VCH Capital team"},
+  {name:"Burnaby Hospital Redevelopment — Phase 2", sector:"Healthcare", client:"Fraser Health / Province of BC", value:"$1B+", fee:"$4M–$8M", timing:"Plans re-paced per BC Budget 2026", status:"Monitoring", priority:18, action:"Monitor for updated procurement timeline after plan refresh"},
+  {name:"Newton Community Centre — Surrey", sector:"Sports & Recreation", client:"City of Surrey", value:"$150M+", fee:"$800K–$1.5M", timing:"Construction start late 2026", status:"Identified", priority:18, action:"Contact City of Surrey re: design team and M&E consultant status"},
+  {name:"Metro Vancouver Housing — Phase 2 (670 Units)", sector:"Residential High-Rise", client:"BC Housing / Metro Vancouver Housing", value:"$226M+", fee:"$1M–$2M", timing:"2026–2028 construction", status:"Identified", priority:17, action:"Identify site locations and architect teams for Phase 2 buildings"},
+  {name:"Langara Gardens — 2,600 Homes / 10 Towers", sector:"Mixed-Use High-Rise", client:"Peterson Group", value:"$1B+", fee:"$3M–$6M", timing:"First phases 2027–2028 start", status:"Identified", priority:17, action:"Monitor for Phase 1 design team announcements"},
+  {name:"AI Data Centre — 150 West Georgia, Vancouver", sector:"Light Industrial", client:"Westbank / Allied Properties REIT", value:"$200M+", fee:"$1M–$3M", timing:"Planning/rezoning stage", status:"Identified", priority:17, action:"Monitor rezoning progress; position early for data centre M&E"},
+  {name:"VSB Seismic Upgrade Program ($850M request)", sector:"Education", client:"Vancouver School Board / Province of BC", value:"$850M (5-yr request)", fee:"$2M–$5M", timing:"Rolling program; ongoing approvals", status:"Monitoring", priority:17, action:"Monitor individual school project approvals for M&E procurement"},
+  {name:"BC Long-Term Care — 7 Re-Paced Projects", sector:"Healthcare", client:"Province of BC / Various Health Authorities", value:"$1.4B+ combined", fee:"$5M–$10M", timing:"Delayed; re-paced per BC Budget 2026", status:"Monitoring", priority:17, action:"Monitor for timeline reinstatement; maintain HA relationships"},
+  {name:"UVic Student Housing — 500+ Beds", sector:"Education", client:"University of Victoria / Province of BC", value:"$178M", fee:"$800K–$1.5M", timing:"Construction start Spring 2026", status:"Identified", priority:17, action:"Contact UVic re: M&E consultant selection"},
+  {name:"Cameron Community Centre and Library — Burnaby", sector:"Sports & Recreation", client:"City of Burnaby", value:"$280M", fee:"$1.2M–$2M", timing:"Under construction; completion 2028", status:"Monitoring", priority:16, action:"Monitor for scope changes or M&E subcontract opportunities"},
+  {name:"Downtown South Fire Hall — Vancouver", sector:"Public Safety", client:"City of Vancouver", value:"$25M–$35M", fee:"$200K–$400K", timing:"Construction phase in 2026 budget", status:"Identified", priority:16, action:"Inquire about design team status and M&E consultant selection"},
+  {name:"Burke Mountain Community Centre — Coquitlam", sector:"Sports & Recreation", client:"City of Coquitlam", value:"$60M–$90M", fee:"$400K–$700K", timing:"Construction start 2026; opening 2029", status:"Identified", priority:16, action:"Contact City of Coquitlam re: design team selection"},
+  {name:"Southwynd Place — 903 Social Housing Units", sector:"Residential High-Rise", client:"Purpose Driven Development", value:"$300M+", fee:"$1.5M–$3M", timing:"Rezoning public hearing 2026", status:"Identified", priority:16, action:"Monitor rezoning outcome; identify architect for teaming"},
+  {name:"800-876 Granville Street — Twin Towers (43+39 storeys)", sector:"Mixed-Use High-Rise", client:"Private Developer", value:"$300M+", fee:"$1.5M–$3M", timing:"Rezoning approved Feb 2026", status:"Identified", priority:16, action:"Identify developer and architect for teaming discussions"},
+  {name:"Langley Events Centre — Five-Arena Expansion", sector:"Sports & Recreation", client:"Langley Events Centre / Township", value:"$80M–$120M", fee:"$500K–$1M", timing:"Expansion underway", status:"Monitoring", priority:16, action:"Inquire about M&E consultant status for arena expansion"},
+  {name:"Marpole Community Centre — Vancouver", sector:"Sports & Recreation", client:"City of Vancouver", value:"$91M", fee:"$400K–$700K", timing:"Under construction; completion Q4 2026", status:"Monitoring", priority:15, action:"Track for lessons learned; note mass timber + Passive House"},
+  {name:"North Shore Neighbourhood House — Phase 2 (179 Units)", sector:"Residential High-Rise", client:"BC Housing", value:"$60M–$80M", fee:"$300K–$500K", timing:"Phase 2 design/procurement TBD", status:"Identified", priority:15, action:"Inquire about Phase 2 timeline and design team procurement"},
+  {name:"CFB Esquimalt — 480-Unit Housing Complex", sector:"Military", client:"DND / Defence Construction Canada", value:"$150M–$250M", fee:"$1M–$2M", timing:"Design awarded Aug 2024; completion 2030s", status:"Monitoring", priority:15, action:"Contact DCC Victoria re: M&E subcontract opportunities"},
+  {name:"Mission Memorial Hospital ED Expansion", sector:"Healthcare", client:"Fraser Health / Province of BC", value:"$18M", fee:"$100K–$200K", timing:"Construction started Feb 2026", status:"Monitoring", priority:15, action:"Contact Fraser Health re: M&E subcontract status"},
+  {name:"Jewish Community Centre — 600+ Rental Homes", sector:"Mixed-Use High-Rise", client:"JCC of Greater Vancouver", value:"$200M+", fee:"$1M–$2M", timing:"Proposal stage; timeline TBD", status:"Identified", priority:15, action:"Monitor for development application and architect selection"},
+  {name:"New Vancouver Animal Shelter", sector:"Institutional", client:"City of Vancouver", value:"$15M–$25M", fee:"$150K–$300K", timing:"Construction phase in 2026 budget", status:"Identified", priority:14, action:"Inquire about project status and M&E team"},
+  {name:"Esquimalt Public Safety Building", sector:"Public Safety", client:"Township of Esquimalt / CRD", value:"$48M", fee:"$250K–$400K", timing:"Construction started May 2024; completion Fall 2026", status:"Monitoring", priority:14, action:"Monitor for completion; reference for future public safety bids"},
+  {name:"Pitt Meadows RCMP Detachment", sector:"Public Safety", client:"City of Pitt Meadows", value:"$20M–$30M", fee:"$150K–$250K", timing:"Construction complete March 2026", status:"Archived", priority:12, action:"Archive — reference for future RCMP/police facility pursuits"}
+];
+
+// ── Render ──
+document.getElementById("scanDate").textContent = SCAN_DATE;
+document.getElementById("nextScan").textContent = NEXT_SCAN;
+
+// Summary cards
+const totalValue = "$5B+";
+const totalFee = "$40M–$85M";
+const activeCount = opportunities.filter(o => o.status !== "Archived").length;
+const highPriority = opportunities.filter(o => o.priority >= 18).length;
+
+const summaryHTML = [
+  {label:"Total Opportunities", value: opportunities.length, detail:`${activeCount} active, ${opportunities.length - activeCount} archived`},
+  {label:"Combined Est. Value", value: totalValue, detail:"Across all tracked opportunities"},
+  {label:"Combined M&E Fee Potential", value: totalFee, detail:"Estimated addressable scope"},
+  {label:"High Priority (18+)", value: highPriority, detail:"Active positioning recommended"},
+].map(c => `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="detail">${c.detail}</div></div>`).join("");
+document.getElementById("summaryCards").innerHTML = summaryHTML;
+
+// Sector breakdown
+const sectors = {};
+opportunities.forEach(o => { sectors[o.sector] = (sectors[o.sector] || 0) + 1; });
+const sortedSectors = Object.entries(sectors).sort((a,b) => b[1] - a[1]);
+document.getElementById("sectorGrid").innerHTML = sortedSectors.map(([name, count]) =>
+  `<div class="sector-chip"><span class="name">${name}</span><span class="count">${count}</span></div>`
+).join("");
+
+// Populate filter dropdowns
+const sectorSelect = document.getElementById("filterSector");
+sortedSectors.forEach(([s]) => { const opt = document.createElement("option"); opt.value = s; opt.textContent = s; sectorSelect.appendChild(opt); });
+["Identified","Monitoring","Archived"].forEach(s => { const opt = document.createElement("option"); opt.value = s; opt.textContent = s; document.getElementById("filterStatus").appendChild(opt); });
+
+// Table rendering
+function priorityBadge(p) {
+  const cls = p >= 18 ? "p-high" : p >= 14 ? "p-med" : "p-low";
+  return `<span class="priority ${cls}">${p}/25</span>`;
+}
+function statusBadge(s) {
+  const cls = s === "Identified" ? "s-identified" : s === "Monitoring" ? "s-monitoring" : "s-archived";
+  return `<span class="status-badge ${cls}">${s}</span>`;
+}
+
+function renderTable(data) {
+  document.getElementById("tableBody").innerHTML = data.map(o => `<tr>
+    <td>${o.name}</td>
+    <td>${o.sector}</td>
+    <td>${o.client}</td>
+    <td>${o.value}</td>
+    <td>${o.fee}</td>
+    <td>${o.timing}</td>
+    <td>${statusBadge(o.status)}</td>
+    <td>${priorityBadge(o.priority)}</td>
+    <td>${o.action}</td>
+  </tr>`).join("");
+}
+
+function applyFilters() {
+  const sector = document.getElementById("filterSector").value;
+  const status = document.getElementById("filterStatus").value;
+  const search = document.getElementById("searchBox").value.toLowerCase();
+  let filtered = opportunities;
+  if (sector) filtered = filtered.filter(o => o.sector === sector);
+  if (status) filtered = filtered.filter(o => o.status === status);
+  if (search) filtered = filtered.filter(o =>
+    o.name.toLowerCase().includes(search) ||
+    o.client.toLowerCase().includes(search) ||
+    o.action.toLowerCase().includes(search)
+  );
+  renderTable(filtered);
+}
+
+document.getElementById("filterSector").addEventListener("change", applyFilters);
+document.getElementById("filterStatus").addEventListener("change", applyFilters);
+document.getElementById("searchBox").addEventListener("input", applyFilters);
+
+// Sort
+let sortCol = -1, sortAsc = true;
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
+  const keys = ["name","sector","client","value","fee","timing","status","priority","action"];
+  const key = keys[col];
+  opportunities.sort((a,b) => {
+    let va = a[key], vb = b[key];
+    if (typeof va === "number") return sortAsc ? va - vb : vb - va;
+    return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+  applyFilters();
+}
+
+// Initial sort by priority descending
+sortCol = 7; sortAsc = false;
+renderTable(opportunities);
+</script>
+</body>
+</html>
