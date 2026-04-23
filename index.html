@@ -25,6 +25,80 @@
     color: var(--black-100);
     line-height: 1.5;
   }
+  body.locked { overflow: hidden; }
+
+  /* ── Login Overlay ── */
+  .login-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--mcw-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-box {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 48px 40px;
+    width: 380px;
+    max-width: 90vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    text-align: center;
+  }
+  .login-box h2 {
+    font-size: 20px;
+    color: var(--mcw-green);
+    margin-bottom: 4px;
+  }
+  .login-box .login-subtitle {
+    font-size: 12px;
+    color: var(--black-80);
+    margin-bottom: 28px;
+  }
+  .login-box input[type="password"] {
+    width: 100%;
+    padding: 12px 16px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    border: 2px solid var(--border-gray);
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .login-box input[type="password"]:focus { border-color: var(--mcw-green); }
+  .login-box input[type="password"].error { border-color: var(--red); }
+  .login-box button {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--mcw-green);
+    color: var(--white);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .login-box button:hover { background: var(--mcw-green-hover); }
+  .login-error {
+    color: var(--red);
+    font-size: 12px;
+    margin-top: 10px;
+    min-height: 16px;
+  }
+  .login-footer {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    position: fixed;
+    bottom: 16px;
+    left: 0;
+    right: 0;
+    text-align: center;
+  }
 
   /* ── Header ── */
   .header {
@@ -246,6 +320,20 @@
 </head>
 <body>
 
+<!-- Login Overlay -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>MCW CONSULTANTS</h2>
+    <div class="login-subtitle">Long Lead Pipeline — Authorized Access Only</div>
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="off" autofocus>
+      <button type="submit">Sign In</button>
+      <div class="login-error" id="loginError"></div>
+    </form>
+  </div>
+  <div class="login-footer">MCW Consultants Ltd. — Confidential</div>
+</div>
+
 <div class="header">
   <div>
     <h1>MCW CONSULTANTS — LONG LEAD PIPELINE</h1>
@@ -344,6 +432,58 @@
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════════
+// AUTHENTICATION
+// ═══════════════════════════════════════════════════════
+const PASS_HASH = "a0d3c4f2e8b1d5a7c9e3f6b8d2a4c6e0f1b3d5a7c9e2f4b6d8a0c2e4f6b8d0"; // placeholder
+
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Pre-compute the hash of "mcw2026"
+// SHA-256 of "mcw2026" = we compute on load and compare
+const CORRECT_HASH = "must-compute";
+
+(async function() {
+  // The correct password hash (SHA-256 of "mcw2026")
+  const correctHash = await sha256("mcw2026");
+  window._correctHash = correctHash;
+
+  // Check if already authenticated this session
+  const stored = window.sessionStorage && sessionStorage.getItem("mcw_auth");
+  if (stored === correctHash) {
+    document.getElementById("loginOverlay").classList.add("hidden");
+    document.body.classList.remove("locked");
+  } else {
+    document.body.classList.add("locked");
+  }
+})();
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const input = document.getElementById("loginPassword").value;
+  const hash = await sha256(input);
+  if (hash === window._correctHash) {
+    if (window.sessionStorage) sessionStorage.setItem("mcw_auth", hash);
+    document.getElementById("loginOverlay").classList.add("hidden");
+    document.body.classList.remove("locked");
+  } else {
+    document.getElementById("loginPassword").classList.add("error");
+    document.getElementById("loginError").textContent = "Incorrect password";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginPassword").focus();
+    setTimeout(() => {
+      document.getElementById("loginPassword").classList.remove("error");
+      document.getElementById("loginError").textContent = "";
+    }, 2000);
+  }
+  return false;
+}
+
 // ═══════════════════════════════════════════════════════
 // TAB SWITCHING
 // ═══════════════════════════════════════════════════════
