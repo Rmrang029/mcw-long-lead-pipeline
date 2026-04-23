@@ -14,6 +14,9 @@
     --border-gray: #CCCCCC;
     --bg: #F8F9FA;
     --white: #FFFFFF;
+    --red: #DC3545;
+    --amber: #FFC107;
+    --blue: #0D6EFD;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -43,6 +46,37 @@
     line-height: 1.6;
   }
 
+  /* ── Tabs ── */
+  .tab-bar {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 40px 0;
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--mcw-green);
+  }
+  .tab-btn {
+    padding: 10px 24px;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--border-gray);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    background: var(--white);
+    color: var(--black-80);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--mcw-green-light); }
+  .tab-btn.active {
+    background: var(--mcw-green);
+    color: var(--white);
+    border-color: var(--mcw-green);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
   /* ── Summary Cards ── */
   .summary {
     display: grid;
@@ -62,6 +96,8 @@
   .card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--black-80); margin-bottom: 6px; }
   .card .value { font-size: 28px; font-weight: 700; color: var(--mcw-green); }
   .card .detail { font-size: 12px; color: var(--black-80); margin-top: 4px; }
+  .card.warn { border-left-color: var(--red); }
+  .card.warn .value { color: var(--red); }
 
   /* ── Sector Breakdown ── */
   .section {
@@ -150,7 +186,6 @@
     white-space: nowrap;
     cursor: pointer;
     user-select: none;
-    position: relative;
   }
   thead th:hover { background: var(--mcw-green-hover); }
   thead th .sort-arrow { margin-left: 4px; font-size: 10px; opacity: 0.7; }
@@ -158,33 +193,36 @@
   tbody tr:nth-child(even) { background: var(--mcw-green-light); }
   tbody tr:hover { background: #D4EDDA; }
   tbody td { padding: 10px 12px; vertical-align: top; color: var(--black-80); }
-  tbody td:first-child { font-weight: 600; color: var(--black-100); min-width: 260px; }
+  tbody td:first-child { font-weight: 600; color: var(--black-100); min-width: 220px; }
 
   /* Priority badge */
-  .priority {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 11px;
-    text-align: center;
-    min-width: 42px;
-  }
+  .priority { display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 11px; text-align: center; min-width: 42px; }
   .p-high { background: #00863F; color: #fff; }
   .p-med { background: #FFC107; color: #231F20; }
   .p-low { background: #E0E0E0; color: #58595B; }
 
   /* Status badge */
-  .status-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-  }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
   .s-identified { background: #D4EDDA; color: #00863F; }
   .s-monitoring { background: #FFF3CD; color: #856404; }
   .s-archived { background: #E0E0E0; color: #58595B; }
+
+  /* Access status badges */
+  .access-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .a-accessible { background: #D4EDDA; color: #00863F; }
+  .a-partial { background: #FFF3CD; color: #856404; }
+  .a-blocked { background: #F8D7DA; color: #842029; }
+  .a-404 { background: #F8D7DA; color: #842029; }
+  .a-redirect { background: #CFE2FF; color: #084298; }
+  .a-paywall { background: #E2D5F1; color: #5A2D82; }
+  .a-untested { background: #E0E0E0; color: #58595B; }
+
+  /* Category separator */
+  .cat-row td { background: #F2F2F2 !important; font-weight: 700; color: var(--mcw-green) !important; font-size: 12px; padding: 8px 12px; }
+
+  /* URL link */
+  .url-link { color: var(--blue); text-decoration: none; word-break: break-all; font-size: 11px; }
+  .url-link:hover { text-decoration: underline; }
 
   /* ── Footer ── */
   .footer {
@@ -199,9 +237,10 @@
   /* ── Responsive ── */
   @media (max-width: 768px) {
     .header { padding: 20px; }
-    .summary, .section, .controls, .table-wrap { padding-left: 16px; padding-right: 16px; }
+    .summary, .section, .controls, .table-wrap, .tab-bar { padding-left: 16px; padding-right: 16px; }
     .header h1 { font-size: 18px; }
     .card .value { font-size: 22px; }
+    .tab-btn { padding: 8px 14px; font-size: 12px; }
   }
 </style>
 </head>
@@ -219,16 +258,24 @@
   </div>
 </div>
 
-<!-- Summary Cards -->
+<!-- Tab Navigation -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('pipeline')">Pipeline Tracker</button>
+  <button class="tab-btn" onclick="switchTab('sources')">Source Access Audit</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB 1: PIPELINE TRACKER -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="tab-pipeline" class="tab-content active">
+
 <div class="summary" id="summaryCards"></div>
 
-<!-- Sector Breakdown -->
 <div class="section">
   <h2>Pipeline by Sector</h2>
   <div class="sector-grid" id="sectorGrid"></div>
 </div>
 
-<!-- Filter Controls -->
 <div class="controls">
   <label>Filter:</label>
   <select id="filterSector"><option value="">All Sectors</option></select>
@@ -236,24 +283,58 @@
   <input type="text" id="searchBox" placeholder="Search opportunities...">
 </div>
 
-<!-- Pipeline Table -->
 <div class="table-wrap">
   <table>
     <thead>
       <tr>
-        <th onclick="sortTable(0)">Opportunity <span class="sort-arrow">▼</span></th>
-        <th onclick="sortTable(1)">Sector <span class="sort-arrow">▼</span></th>
-        <th onclick="sortTable(2)">Client / Owner <span class="sort-arrow">▼</span></th>
-        <th onclick="sortTable(3)">Est. Value <span class="sort-arrow">▼</span></th>
-        <th onclick="sortTable(4)">M&amp;E Fee <span class="sort-arrow">▼</span></th>
-        <th onclick="sortTable(5)">Timing <span class="sort-arrow">▼</span></th>
-        <th onclick="sortTable(6)">Status <span class="sort-arrow">▼</span></th>
-        <th onclick="sortTable(7)">Priority <span class="sort-arrow">▼</span></th>
-        <th onclick="sortTable(8)">Next Action <span class="sort-arrow">▼</span></th>
+        <th onclick="sortTable(0)">Opportunity <span class="sort-arrow">&#9660;</span></th>
+        <th onclick="sortTable(1)">Sector <span class="sort-arrow">&#9660;</span></th>
+        <th onclick="sortTable(2)">Client / Owner <span class="sort-arrow">&#9660;</span></th>
+        <th onclick="sortTable(3)">Est. Value <span class="sort-arrow">&#9660;</span></th>
+        <th onclick="sortTable(4)">M&amp;E Fee <span class="sort-arrow">&#9660;</span></th>
+        <th onclick="sortTable(5)">Timing <span class="sort-arrow">&#9660;</span></th>
+        <th onclick="sortTable(6)">Status <span class="sort-arrow">&#9660;</span></th>
+        <th onclick="sortTable(7)">Priority <span class="sort-arrow">&#9660;</span></th>
+        <th onclick="sortTable(8)">Next Action <span class="sort-arrow">&#9660;</span></th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
+</div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB 2: SOURCE ACCESS AUDIT -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="tab-sources" class="tab-content">
+
+<div class="summary" id="auditSummaryCards"></div>
+
+<div class="controls">
+  <label>Filter:</label>
+  <select id="filterCategory"><option value="">All Categories</option></select>
+  <select id="filterAccess"><option value="">All Access Statuses</option></select>
+  <input type="text" id="searchSources" placeholder="Search sources...">
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Source Name</th>
+        <th>Category</th>
+        <th>Full URL</th>
+        <th>Access Status</th>
+        <th>HTTP Code</th>
+        <th>Content Useful</th>
+        <th>Notes / Action Required</th>
+      </tr>
+    </thead>
+    <tbody id="auditTableBody"></tbody>
+  </table>
+</div>
+
 </div>
 
 <div class="footer">
@@ -263,64 +344,208 @@
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════════════
-// PIPELINE DATA — updated by each scan run
-// ══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════
+// PIPELINE DATA
+// ═══════════════════════════════════════════════════════
 const SCAN_DATE = "March 23, 2026";
 const NEXT_SCAN = "April 1, 2026";
-const SOURCES_COUNT = 119;
 
 const opportunities = [
-  {name:"Vancouver General Hospital — Campus Redevelopment", sector:"Healthcare", client:"Vancouver Coastal Health / PHSA", value:"$2B+ (multi-phase)", fee:"$8M–$15M", timing:"Phase 1 construction 2027+", status:"Identified", priority:22, action:"Monitor rezoning public hearing schedule; identify architect team"},
-  {name:"Skeena Terrace Redevelopment — 1,700 Units / 7 Phases", sector:"Residential High-Rise", client:"BC Housing", value:"$800M+ (all phases)", fee:"$3M–$6M", timing:"Phases 2–7 design 2027–2035+", status:"Identified", priority:21, action:"Reach out to BC Housing and Perkins&Will re: M&E teaming for Phase 2+"},
-  {name:"Surrey City Centre Arena — 10,000 Seats", sector:"Sports & Recreation", client:"City of Surrey", value:"$200M+", fee:"$1M–$2M", timing:"RFP due May 2026; construction 2027", status:"Identified", priority:20, action:"Monitor RFP release; identify shortlisted design-build teams"},
-  {name:"UBC Student Residence Complex — Lower Mall Precinct", sector:"Education", client:"University of British Columbia", value:"$560M", fee:"$2M–$4M", timing:"Construction start Fall 2026", status:"Identified", priority:20, action:"Contact UBC Infrastructure Development re: M&E consultant selection"},
-  {name:"BCIT Trades and Technology Complex — Phase 4", sector:"Education", client:"BCIT / Province of BC", value:"$220M (~$50M Phase 4)", fee:"$200K–$500K", timing:"Phase 4 construction Summer 2026", status:"Identified", priority:19, action:"Inquire about M&E consultant status for Concert Properties Centre building"},
-  {name:"Brentwood Community Centre — Burnaby", sector:"Sports & Recreation", client:"City of Burnaby", value:"$146M", fee:"$700K–$1.2M", timing:"Construction start Winter 2026", status:"Identified", priority:19, action:"Identify design team and M&E consultant status"},
-  {name:"Richmond Hospital Redevelopment — Acute Care Tower", sector:"Healthcare", client:"VCH / Province of BC", value:"$500M+", fee:"$2M–$5M", timing:"Phase 2 procurement TBD", status:"Identified", priority:19, action:"Monitor Phase 2 procurement timeline; connect with VCH Capital team"},
-  {name:"Burnaby Hospital Redevelopment — Phase 2", sector:"Healthcare", client:"Fraser Health / Province of BC", value:"$1B+", fee:"$4M–$8M", timing:"Plans re-paced per BC Budget 2026", status:"Monitoring", priority:18, action:"Monitor for updated procurement timeline after plan refresh"},
-  {name:"Newton Community Centre — Surrey", sector:"Sports & Recreation", client:"City of Surrey", value:"$150M+", fee:"$800K–$1.5M", timing:"Construction start late 2026", status:"Identified", priority:18, action:"Contact City of Surrey re: design team and M&E consultant status"},
-  {name:"Metro Vancouver Housing — Phase 2 (670 Units)", sector:"Residential High-Rise", client:"BC Housing / Metro Vancouver Housing", value:"$226M+", fee:"$1M–$2M", timing:"2026–2028 construction", status:"Identified", priority:17, action:"Identify site locations and architect teams for Phase 2 buildings"},
-  {name:"Langara Gardens — 2,600 Homes / 10 Towers", sector:"Mixed-Use High-Rise", client:"Peterson Group", value:"$1B+", fee:"$3M–$6M", timing:"First phases 2027–2028 start", status:"Identified", priority:17, action:"Monitor for Phase 1 design team announcements"},
-  {name:"AI Data Centre — 150 West Georgia, Vancouver", sector:"Light Industrial", client:"Westbank / Allied Properties REIT", value:"$200M+", fee:"$1M–$3M", timing:"Planning/rezoning stage", status:"Identified", priority:17, action:"Monitor rezoning progress; position early for data centre M&E"},
-  {name:"VSB Seismic Upgrade Program ($850M request)", sector:"Education", client:"Vancouver School Board / Province of BC", value:"$850M (5-yr request)", fee:"$2M–$5M", timing:"Rolling program; ongoing approvals", status:"Monitoring", priority:17, action:"Monitor individual school project approvals for M&E procurement"},
-  {name:"BC Long-Term Care — 7 Re-Paced Projects", sector:"Healthcare", client:"Province of BC / Various Health Authorities", value:"$1.4B+ combined", fee:"$5M–$10M", timing:"Delayed; re-paced per BC Budget 2026", status:"Monitoring", priority:17, action:"Monitor for timeline reinstatement; maintain HA relationships"},
-  {name:"UVic Student Housing — 500+ Beds", sector:"Education", client:"University of Victoria / Province of BC", value:"$178M", fee:"$800K–$1.5M", timing:"Construction start Spring 2026", status:"Identified", priority:17, action:"Contact UVic re: M&E consultant selection"},
-  {name:"Cameron Community Centre and Library — Burnaby", sector:"Sports & Recreation", client:"City of Burnaby", value:"$280M", fee:"$1.2M–$2M", timing:"Under construction; completion 2028", status:"Monitoring", priority:16, action:"Monitor for scope changes or M&E subcontract opportunities"},
-  {name:"Downtown South Fire Hall — Vancouver", sector:"Public Safety", client:"City of Vancouver", value:"$25M–$35M", fee:"$200K–$400K", timing:"Construction phase in 2026 budget", status:"Identified", priority:16, action:"Inquire about design team status and M&E consultant selection"},
-  {name:"Burke Mountain Community Centre — Coquitlam", sector:"Sports & Recreation", client:"City of Coquitlam", value:"$60M–$90M", fee:"$400K–$700K", timing:"Construction start 2026; opening 2029", status:"Identified", priority:16, action:"Contact City of Coquitlam re: design team selection"},
-  {name:"Southwynd Place — 903 Social Housing Units", sector:"Residential High-Rise", client:"Purpose Driven Development", value:"$300M+", fee:"$1.5M–$3M", timing:"Rezoning public hearing 2026", status:"Identified", priority:16, action:"Monitor rezoning outcome; identify architect for teaming"},
-  {name:"800-876 Granville Street — Twin Towers (43+39 storeys)", sector:"Mixed-Use High-Rise", client:"Private Developer", value:"$300M+", fee:"$1.5M–$3M", timing:"Rezoning approved Feb 2026", status:"Identified", priority:16, action:"Identify developer and architect for teaming discussions"},
-  {name:"Langley Events Centre — Five-Arena Expansion", sector:"Sports & Recreation", client:"Langley Events Centre / Township", value:"$80M–$120M", fee:"$500K–$1M", timing:"Expansion underway", status:"Monitoring", priority:16, action:"Inquire about M&E consultant status for arena expansion"},
-  {name:"Marpole Community Centre — Vancouver", sector:"Sports & Recreation", client:"City of Vancouver", value:"$91M", fee:"$400K–$700K", timing:"Under construction; completion Q4 2026", status:"Monitoring", priority:15, action:"Track for lessons learned; note mass timber + Passive House"},
-  {name:"North Shore Neighbourhood House — Phase 2 (179 Units)", sector:"Residential High-Rise", client:"BC Housing", value:"$60M–$80M", fee:"$300K–$500K", timing:"Phase 2 design/procurement TBD", status:"Identified", priority:15, action:"Inquire about Phase 2 timeline and design team procurement"},
-  {name:"CFB Esquimalt — 480-Unit Housing Complex", sector:"Military", client:"DND / Defence Construction Canada", value:"$150M–$250M", fee:"$1M–$2M", timing:"Design awarded Aug 2024; completion 2030s", status:"Monitoring", priority:15, action:"Contact DCC Victoria re: M&E subcontract opportunities"},
-  {name:"Mission Memorial Hospital ED Expansion", sector:"Healthcare", client:"Fraser Health / Province of BC", value:"$18M", fee:"$100K–$200K", timing:"Construction started Feb 2026", status:"Monitoring", priority:15, action:"Contact Fraser Health re: M&E subcontract status"},
-  {name:"Jewish Community Centre — 600+ Rental Homes", sector:"Mixed-Use High-Rise", client:"JCC of Greater Vancouver", value:"$200M+", fee:"$1M–$2M", timing:"Proposal stage; timeline TBD", status:"Identified", priority:15, action:"Monitor for development application and architect selection"},
-  {name:"New Vancouver Animal Shelter", sector:"Institutional", client:"City of Vancouver", value:"$15M–$25M", fee:"$150K–$300K", timing:"Construction phase in 2026 budget", status:"Identified", priority:14, action:"Inquire about project status and M&E team"},
-  {name:"Esquimalt Public Safety Building", sector:"Public Safety", client:"Township of Esquimalt / CRD", value:"$48M", fee:"$250K–$400K", timing:"Construction started May 2024; completion Fall 2026", status:"Monitoring", priority:14, action:"Monitor for completion; reference for future public safety bids"},
-  {name:"Pitt Meadows RCMP Detachment", sector:"Public Safety", client:"City of Pitt Meadows", value:"$20M–$30M", fee:"$150K–$250K", timing:"Construction complete March 2026", status:"Archived", priority:12, action:"Archive — reference for future RCMP/police facility pursuits"}
+  {name:"Vancouver General Hospital — Campus Redevelopment", sector:"Healthcare", client:"Vancouver Coastal Health / PHSA", value:"$2B+ (multi-phase)", fee:"$8M-$15M", timing:"Phase 1 construction 2027+", status:"Identified", priority:22, action:"Monitor rezoning public hearing schedule; identify architect team"},
+  {name:"Skeena Terrace Redevelopment — 1,700 Units / 7 Phases", sector:"Residential High-Rise", client:"BC Housing", value:"$800M+ (all phases)", fee:"$3M-$6M", timing:"Phases 2-7 design 2027-2035+", status:"Identified", priority:21, action:"Reach out to BC Housing and Perkins&Will re: M&E teaming for Phase 2+"},
+  {name:"Surrey City Centre Arena — 10,000 Seats", sector:"Sports & Recreation", client:"City of Surrey", value:"$200M+", fee:"$1M-$2M", timing:"RFP due May 2026; construction 2027", status:"Identified", priority:20, action:"Monitor RFP release; identify shortlisted design-build teams"},
+  {name:"UBC Student Residence Complex — Lower Mall Precinct", sector:"Education", client:"University of British Columbia", value:"$560M", fee:"$2M-$4M", timing:"Construction start Fall 2026", status:"Identified", priority:20, action:"Contact UBC Infrastructure Development re: M&E consultant selection"},
+  {name:"BCIT Trades and Technology Complex — Phase 4", sector:"Education", client:"BCIT / Province of BC", value:"$220M (~$50M Phase 4)", fee:"$200K-$500K", timing:"Phase 4 construction Summer 2026", status:"Identified", priority:19, action:"Inquire about M&E consultant status for Concert Properties Centre building"},
+  {name:"Brentwood Community Centre — Burnaby", sector:"Sports & Recreation", client:"City of Burnaby", value:"$146M", fee:"$700K-$1.2M", timing:"Construction start Winter 2026", status:"Identified", priority:19, action:"Identify design team and M&E consultant status"},
+  {name:"Richmond Hospital Redevelopment — Acute Care Tower", sector:"Healthcare", client:"VCH / Province of BC", value:"$500M+", fee:"$2M-$5M", timing:"Phase 2 procurement TBD", status:"Identified", priority:19, action:"Monitor Phase 2 procurement timeline; connect with VCH Capital team"},
+  {name:"Burnaby Hospital Redevelopment — Phase 2", sector:"Healthcare", client:"Fraser Health / Province of BC", value:"$1B+", fee:"$4M-$8M", timing:"Plans re-paced per BC Budget 2026", status:"Monitoring", priority:18, action:"Monitor for updated procurement timeline after plan refresh"},
+  {name:"Newton Community Centre — Surrey", sector:"Sports & Recreation", client:"City of Surrey", value:"$150M+", fee:"$800K-$1.5M", timing:"Construction start late 2026", status:"Identified", priority:18, action:"Contact City of Surrey re: design team and M&E consultant status"},
+  {name:"Metro Vancouver Housing — Phase 2 (670 Units)", sector:"Residential High-Rise", client:"BC Housing / Metro Vancouver Housing", value:"$226M+", fee:"$1M-$2M", timing:"2026-2028 construction", status:"Identified", priority:17, action:"Identify site locations and architect teams for Phase 2 buildings"},
+  {name:"Langara Gardens — 2,600 Homes / 10 Towers", sector:"Mixed-Use High-Rise", client:"Peterson Group", value:"$1B+", fee:"$3M-$6M", timing:"First phases 2027-2028 start", status:"Identified", priority:17, action:"Monitor for Phase 1 design team announcements"},
+  {name:"AI Data Centre — 150 West Georgia, Vancouver", sector:"Light Industrial", client:"Westbank / Allied Properties REIT", value:"$200M+", fee:"$1M-$3M", timing:"Planning/rezoning stage", status:"Identified", priority:17, action:"Monitor rezoning progress; position early for data centre M&E"},
+  {name:"VSB Seismic Upgrade Program ($850M request)", sector:"Education", client:"Vancouver School Board / Province of BC", value:"$850M (5-yr request)", fee:"$2M-$5M", timing:"Rolling program; ongoing approvals", status:"Monitoring", priority:17, action:"Monitor individual school project approvals for M&E procurement"},
+  {name:"BC Long-Term Care — 7 Re-Paced Projects", sector:"Healthcare", client:"Province of BC / Various Health Authorities", value:"$1.4B+ combined", fee:"$5M-$10M", timing:"Delayed; re-paced per BC Budget 2026", status:"Monitoring", priority:17, action:"Monitor for timeline reinstatement; maintain HA relationships"},
+  {name:"UVic Student Housing — 500+ Beds", sector:"Education", client:"University of Victoria / Province of BC", value:"$178M", fee:"$800K-$1.5M", timing:"Construction start Spring 2026", status:"Identified", priority:17, action:"Contact UVic re: M&E consultant selection"},
+  {name:"Cameron Community Centre and Library — Burnaby", sector:"Sports & Recreation", client:"City of Burnaby", value:"$280M", fee:"$1.2M-$2M", timing:"Under construction; completion 2028", status:"Monitoring", priority:16, action:"Monitor for scope changes or M&E subcontract opportunities"},
+  {name:"Downtown South Fire Hall — Vancouver", sector:"Public Safety", client:"City of Vancouver", value:"$25M-$35M", fee:"$200K-$400K", timing:"Construction phase in 2026 budget", status:"Identified", priority:16, action:"Inquire about design team status and M&E consultant selection"},
+  {name:"Burke Mountain Community Centre — Coquitlam", sector:"Sports & Recreation", client:"City of Coquitlam", value:"$60M-$90M", fee:"$400K-$700K", timing:"Construction start 2026; opening 2029", status:"Identified", priority:16, action:"Contact City of Coquitlam re: design team selection"},
+  {name:"Southwynd Place — 903 Social Housing Units", sector:"Residential High-Rise", client:"Purpose Driven Development", value:"$300M+", fee:"$1.5M-$3M", timing:"Rezoning public hearing 2026", status:"Identified", priority:16, action:"Monitor rezoning outcome; identify architect for teaming"},
+  {name:"800-876 Granville Street — Twin Towers (43+39 storeys)", sector:"Mixed-Use High-Rise", client:"Private Developer", value:"$300M+", fee:"$1.5M-$3M", timing:"Rezoning approved Feb 2026", status:"Identified", priority:16, action:"Identify developer and architect for teaming discussions"},
+  {name:"Langley Events Centre — Five-Arena Expansion", sector:"Sports & Recreation", client:"Langley Events Centre / Township", value:"$80M-$120M", fee:"$500K-$1M", timing:"Expansion underway", status:"Monitoring", priority:16, action:"Inquire about M&E consultant status for arena expansion"},
+  {name:"Marpole Community Centre — Vancouver", sector:"Sports & Recreation", client:"City of Vancouver", value:"$91M", fee:"$400K-$700K", timing:"Under construction; completion Q4 2026", status:"Monitoring", priority:15, action:"Track for lessons learned; note mass timber + Passive House"},
+  {name:"North Shore Neighbourhood House — Phase 2 (179 Units)", sector:"Residential High-Rise", client:"BC Housing", value:"$60M-$80M", fee:"$300K-$500K", timing:"Phase 2 design/procurement TBD", status:"Identified", priority:15, action:"Inquire about Phase 2 timeline and design team procurement"},
+  {name:"CFB Esquimalt — 480-Unit Housing Complex", sector:"Military", client:"DND / Defence Construction Canada", value:"$150M-$250M", fee:"$1M-$2M", timing:"Design awarded Aug 2024; completion 2030s", status:"Monitoring", priority:15, action:"Contact DCC Victoria re: M&E subcontract opportunities"},
+  {name:"Mission Memorial Hospital ED Expansion", sector:"Healthcare", client:"Fraser Health / Province of BC", value:"$18M", fee:"$100K-$200K", timing:"Construction started Feb 2026", status:"Monitoring", priority:15, action:"Contact Fraser Health re: M&E subcontract status"},
+  {name:"Jewish Community Centre — 600+ Rental Homes", sector:"Mixed-Use High-Rise", client:"JCC of Greater Vancouver", value:"$200M+", fee:"$1M-$2M", timing:"Proposal stage; timeline TBD", status:"Identified", priority:15, action:"Monitor for development application and architect selection"},
+  {name:"New Vancouver Animal Shelter", sector:"Institutional", client:"City of Vancouver", value:"$15M-$25M", fee:"$150K-$300K", timing:"Construction phase in 2026 budget", status:"Identified", priority:14, action:"Inquire about project status and M&E team"},
+  {name:"Esquimalt Public Safety Building", sector:"Public Safety", client:"Township of Esquimalt / CRD", value:"$48M", fee:"$250K-$400K", timing:"Construction started May 2024; completion Fall 2026", status:"Monitoring", priority:14, action:"Monitor for completion; reference for future public safety bids"},
+  {name:"Pitt Meadows RCMP Detachment", sector:"Public Safety", client:"City of Pitt Meadows", value:"$20M-$30M", fee:"$150K-$250K", timing:"Construction complete March 2026", status:"Archived", priority:12, action:"Archive — reference for future RCMP/police facility pursuits"}
 ];
 
-// ── Render ──
+// ═══════════════════════════════════════════════════════
+// SOURCE ACCESS AUDIT DATA — all 119 sources
+// ═══════════════════════════════════════════════════════
+const auditSources = [
+  // 4.1 Provincial, Federal, and Funding Sources (24)
+  {name:"BC Gov News - Infrastructure", cat:"4.1 Provincial/Federal", url:"https://news.gov.bc.ca/ministries/infrastructure", status:"Accessible", code:"200", useful:"Yes", notes:"Recent project announcements available"},
+  {name:"BC Ministry of Infrastructure", cat:"4.1 Provincial/Federal", url:"https://www2.gov.bc.ca/gov/content/governments/organizational-structure/ministries-organizations/ministries/infrastructure", status:"Accessible", code:"200", useful:"Partial", notes:"Navigation hub only; no project details"},
+  {name:"BC Major Projects Inventory", cat:"4.1 Provincial/Federal", url:"https://www2.gov.bc.ca/gov/content/employment-business/economic-development/industry/bc-major-projects-inventory", status:"Accessible", code:"200", useful:"Partial", notes:"Q2 2025 data; must download Excel/PDF"},
+  {name:"BC EAO (EPIC)", cat:"4.1 Provincial/Federal", url:"https://www.projects.eao.gov.bc.ca", status:"Accessible", code:"200", useful:"No", notes:"Page returned CSS only; needs JS rendering (use Chrome)"},
+  {name:"BC EAO - Projects List", cat:"4.1 Provincial/Federal", url:"https://www.projects.eao.gov.bc.ca/projects", status:"Accessible", code:"200", useful:"No", notes:"Same as above; needs Chrome"},
+  {name:"BC Gov News - Housing", cat:"4.1 Provincial/Federal", url:"https://news.gov.bc.ca/ministries/housing-and-municipal-affairs", status:"Accessible", code:"200", useful:"Yes", notes:"Recent housing announcements"},
+  {name:"BC Gov News - Health", cat:"4.1 Provincial/Federal", url:"https://news.gov.bc.ca/ministries/health", status:"Accessible", code:"200", useful:"Partial", notes:"No capital projects in last 30 days"},
+  {name:"BC Budget & Capital Plan", cat:"4.1 Provincial/Federal", url:"https://www.bcbudget.gov.bc.ca", status:"Accessible", code:"200", useful:"Partial", notes:"Landing page only; budget downloads available"},
+  {name:"BC K-12 Capital Planning", cat:"4.1 Provincial/Federal", url:"https://www2.gov.bc.ca/gov/content/education-training/k-12/administration/capital", status:"Accessible", code:"200", useful:"Partial", notes:"Hub page; links to project details"},
+  {name:"BC Housing", cat:"4.1 Provincial/Federal", url:"https://www.bchousing.org", status:"Accessible", code:"200", useful:"Partial", notes:"Navigation hub; no project details on homepage"},
+  {name:"Infrastructure BC", cat:"4.1 Provincial/Federal", url:"https://www.infrastructurebc.com", status:"Accessible", code:"200", useful:"Yes", notes:"Active procurement projects listed"},
+  {name:"Housing, Infrastructure & Communities Canada", cat:"4.1 Provincial/Federal", url:"https://www.infrastructure.gc.ca", status:"Redirected", code:"302", useful:"Partial", notes:"ACTION: URL redirected to housing-infrastructure.canada.ca — update bookmarks"},
+  {name:"HICC - News", cat:"4.1 Provincial/Federal", url:"https://www.infrastructure.gc.ca/news-nouvelles-eng.html", status:"Redirected", code:"302", useful:"Yes", notes:"ACTION: Redirected to housing-infrastructure.canada.ca"},
+  {name:"HICC - Project Map", cat:"4.1 Provincial/Federal", url:"https://www.infrastructure.gc.ca/gmap-gcarte/index-eng.html", status:"Redirected", code:"302", useful:"N/A", notes:"ACTION: Redirected to housing-infrastructure.canada.ca"},
+  {name:"Canada Housing Infrastructure Fund", cat:"4.1 Provincial/Federal", url:"https://www.infrastructure.gc.ca/chif-fidc/index-eng.html", status:"Redirected", code:"302", useful:"N/A", notes:"ACTION: Redirected to housing-infrastructure.canada.ca"},
+  {name:"CMHC - Funding Programs", cat:"4.1 Provincial/Federal", url:"https://www.cmhc-schl.gc.ca/professionals/funding-programs", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: URL returned 404 error — verify correct URL in browser"},
+  {name:"CMHC - Housing Accelerator Fund", cat:"4.1 Provincial/Federal", url:"https://www.cmhc-schl.gc.ca/professionals/funding-programs/all-funding-programs/housing-accelerator-fund", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Parent URL failed; not individually tested"},
+  {name:"CMHC - HAF Progress", cat:"4.1 Provincial/Federal", url:"https://www.cmhc-schl.gc.ca/professionals/funding-programs/all-funding-programs/housing-accelerator-fund/progress", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"CMHC - Project Financing", cat:"4.1 Provincial/Federal", url:"https://www.cmhc-schl.gc.ca/professionals/project-funding-and-mortgage-financing", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"FCM - Funding", cat:"4.1 Provincial/Federal", url:"https://fcm.ca/en/funding", status:"Accessible", code:"200", useful:"Yes", notes:"66 funding opportunities listed"},
+  {name:"Green Municipal Fund", cat:"4.1 Provincial/Federal", url:"https://greenmunicipalfund.ca/funding", status:"Accessible", code:"200", useful:"Yes", notes:"32 programs with amounts"},
+  {name:"UBCM - Funding", cat:"4.1 Provincial/Federal", url:"https://www.ubcm.ca/funding", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"Defence Construction Canada", cat:"4.1 Provincial/Federal", url:"https://www.dcc-cdc.gc.ca", status:"Accessible", code:"200", useful:"Partial", notes:"General info; need e-procurement portal for projects"},
+  {name:"Canada Infrastructure Bank", cat:"4.1 Provincial/Federal", url:"https://cib-bic.ca", status:"Accessible", code:"200", useful:"Partial", notes:"National projects; no BC-specific on homepage"},
+
+  // 4.2 Municipal Council, Committee, and Board Meetings (21)
+  {name:"Vancouver - Council Meetings", cat:"4.2 Municipal Council", url:"https://vancouver.ca/your-government/council-meetings-and-decisions.aspx", status:"Blocked", code:"403", useful:"No", notes:"WebFetch blocked by server; works in browser"},
+  {name:"Vancouver - Search Documents", cat:"4.2 Municipal Council", url:"https://council.vancouver.ca/", status:"Blocked", code:"403", useful:"No", notes:"WebFetch blocked by server; works in browser"},
+  {name:"Metro Vancouver - Agendas & Minutes", cat:"4.2 Municipal Council", url:"https://www.metrovancouver.org/boards/agendas-minutes", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page returned 404 — verify URL"},
+  {name:"Metro Vancouver - Meeting Calendar", cat:"4.2 Municipal Council", url:"https://www.metrovancouver.org/boards/meeting-calendar", status:"Accessible", code:"200", useful:"Yes", notes:"Meetings listed through April 2026"},
+  {name:"Surrey - Council Meetings", cat:"4.2 Municipal Council", url:"https://www.surrey.ca/city-government/mayor-council/council-meetings", status:"Accessible", code:"200", useful:"Partial", notes:"No meetings currently scheduled at time of scan"},
+  {name:"Burnaby - Meetings", cat:"4.2 Municipal Council", url:"https://www.burnaby.ca/our-city/mayor-and-council/meetings-and-public-hearings", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Richmond - Council Meetings", cat:"4.2 Municipal Council", url:"https://www.richmond.ca/cityhall/council/schedule.htm", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Coquitlam - Agendas & Minutes", cat:"4.2 Municipal Council", url:"https://www.coquitlam.ca/city-hall/council-and-committees/agendas-and-minutes", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"New Westminster - Agendas & Minutes", cat:"4.2 Municipal Council", url:"https://www.newwestcity.ca/council/agendas-reports-minutes-video", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"City of North Van - Council", cat:"4.2 Municipal Council", url:"https://www.cnv.org/city-government/council-and-committees/council-meetings", status:"Accessible", code:"200", useful:"Partial", notes:"Navigation only; agenda links available"},
+  {name:"District of North Van - Council", cat:"4.2 Municipal Council", url:"https://www.dnv.org/council-meetings", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Delta - Council Meetings", cat:"4.2 Municipal Council", url:"https://www.delta.ca/city-hall/council-meetings", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"West Vancouver - Council", cat:"4.2 Municipal Council", url:"https://www.westvancouver.ca/government/council/council-agendas-minutes", status:"Blocked", code:"403", useful:"No", notes:"WebFetch blocked; works in browser"},
+  {name:"Township of Langley - Council", cat:"4.2 Municipal Council", url:"https://www.tol.ca/council/agendas-minutes", status:"Accessible", code:"200", useful:"Partial", notes:"Calendar link available"},
+  {name:"Abbotsford - Council", cat:"4.2 Municipal Council", url:"https://www.abbotsford.ca/city-hall/mayor-council/agendas-minutes-videos", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Victoria - Council", cat:"4.2 Municipal Council", url:"https://www.victoria.ca/council-committee-meetings", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Kelowna - Council", cat:"4.2 Municipal Council", url:"https://www.kelowna.ca/city-hall/council/council-meetings", status:"Blocked", code:"403", useful:"No", notes:"WebFetch blocked; works in browser"},
+  {name:"Kamloops - Council", cat:"4.2 Municipal Council", url:"https://www.kamloops.ca/city-hall/council/council-meetings", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Nanaimo - Council Meetings", cat:"4.2 Municipal Council", url:"https://www.nanaimo.ca/city-government/council/council-meetings", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Nanaimo - Meeting Documents", cat:"4.2 Municipal Council", url:"https://www.nanaimo.ca/city-government/council/meeting-documents-videos", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Prince George - Council", cat:"4.2 Municipal Council", url:"https://www.princegeorge.ca/city-government/meetings-agendas-minutes", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+
+  // 4.3 Planning, Rezoning, Development, and Engagement (19)
+  {name:"Vancouver - Rezoning Applications", cat:"4.3 Planning/Development", url:"https://vancouver.ca/home-property-development/rezoning-applications.aspx", status:"Blocked", code:"403", useful:"No", notes:"WebFetch blocked; works in browser"},
+  {name:"Vancouver - Find Dev Application", cat:"4.3 Planning/Development", url:"https://vancouver.ca/home-property-development/find-a-development-application-or-building-permit.aspx", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Shape Your City", cat:"4.3 Planning/Development", url:"https://shapeyourcity.ca", status:"Accessible", code:"200", useful:"Partial", notes:"JS-rendered; project list not in static HTML"},
+  {name:"Shape Your City - All Projects", cat:"4.3 Planning/Development", url:"https://shapeyourcity.ca/all-projects", status:"Accessible", code:"200", useful:"Partial", notes:"Same JS limitation"},
+  {name:"Shape Your City - Rezoning Hub", cat:"4.3 Planning/Development", url:"https://shapeyourcity.ca/rezoning-developments", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Vancouver - Capital Plan", cat:"4.3 Planning/Development", url:"https://vancouver.ca/your-government/capital-plan.aspx", status:"Blocked", code:"403", useful:"No", notes:"WebFetch blocked; works in browser"},
+  {name:"Vancouver - Financial Reports", cat:"4.3 Planning/Development", url:"https://vancouver.ca/your-government/financial-reports-and-information.aspx", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Surrey - Planning Reports", cat:"4.3 Planning/Development", url:"https://www.surrey.ca/city-government/planning-reports", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Engage Surrey", cat:"4.3 Planning/Development", url:"https://www.engagesurrey.ca", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Connection refused — verify URL still active"},
+  {name:"Engage Surrey - All Projects", cat:"4.3 Planning/Development", url:"https://www.engagesurrey.ca/all-projects", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Surrey - Dev Inquiries", cat:"4.3 Planning/Development", url:"https://www.surrey.ca/renovating-building-development/development-building-inquiries", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Surrey - Land, Planning & Dev", cat:"4.3 Planning/Development", url:"https://www.surrey.ca/renovating-building-development", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Richmond - Dev & Zoning", cat:"4.3 Planning/Development", url:"https://www.richmond.ca/plandev/planning2/rezoning.htm", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Richmond - Current Dev Apps", cat:"4.3 Planning/Development", url:"https://www.richmond.ca/plandev/planning2/projects.htm", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Coquitlam - Current Dev Apps", cat:"4.3 Planning/Development", url:"https://www.coquitlam.ca/city-hall/development-activity", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Coquitlam - Dev Applications", cat:"4.3 Planning/Development", url:"https://www.coquitlam.ca/city-hall/development-activity/development-applications", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Let's Talk Coquitlam", cat:"4.3 Planning/Development", url:"https://www.letstalk.coquitlam.ca", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Let's Talk Coquitlam - OCP", cat:"4.3 Planning/Development", url:"https://www.letstalk.coquitlam.ca/official-community-plan", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not individually tested"},
+  {name:"Metro Vancouver - Projects", cat:"4.3 Planning/Development", url:"https://www.metrovancouver.org/services/regional-planning/current-upcoming-projects", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+
+  // 4.4 Health Authorities, Education, Housing, Transit, Airport, Utilities (35)
+  {name:"PHSA - Board Meetings", cat:"4.4 Health/Education/Transit", url:"https://www.phsa.ca/about/leadership/board-of-directors/board-meetings", status:"Accessible", code:"200", useful:"Partial", notes:"Navigation markup only"},
+  {name:"PHSA - Supplier Info", cat:"4.4 Health/Education/Transit", url:"https://www.phsa.ca/suppliers", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"PHSA - Becoming a Supplier", cat:"4.4 Health/Education/Transit", url:"https://www.phsa.ca/suppliers/becoming-a-supplier", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"Fraser Health - Business Opps", cat:"4.4 Health/Education/Transit", url:"https://www.fraserhealth.ca/about-us/doing-business-with-us/business-opportunities", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page returned 404 — verify URL"},
+  {name:"Fraser Health - Capital Projects", cat:"4.4 Health/Education/Transit", url:"https://www.fraserhealth.ca/about-us/capital-projects", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page returned 404 — verify URL"},
+  {name:"VCH - Open Board Forums", cat:"4.4 Health/Education/Transit", url:"https://www.vch.ca/about-us/board-of-directors/open-board-forums", status:"Blocked", code:"403", useful:"No", notes:"WebFetch blocked; works in browser"},
+  {name:"VCH - Procurement", cat:"4.4 Health/Education/Transit", url:"https://www.vch.ca/about-us/doing-business-with-us", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"Island Health - Board Forums", cat:"4.4 Health/Education/Transit", url:"https://www.islandhealth.ca/about-us/board-directors/board-forums", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"Interior Health - Board", cat:"4.4 Health/Education/Transit", url:"https://www.interiorhealth.ca/about-us/board-of-directors", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"Northern Health - Board", cat:"4.4 Health/Education/Transit", url:"https://www.northernhealth.ca/about-us/board-directors", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"Northern Health - Board Agendas", cat:"4.4 Health/Education/Transit", url:"https://www.northernhealth.ca/about-us/board-directors/board-agendas-minutes", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"Providence - Governance", cat:"4.4 Health/Education/Transit", url:"https://www.providencehealthcare.org/about-us/governance", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"Providence - New St. Paul's", cat:"4.4 Health/Education/Transit", url:"https://www.providencehealthcare.org/new-st-pauls", status:"Blocked", code:"403", useful:"No", notes:"WebFetch blocked; works in browser"},
+  {name:"First Nations Health Authority", cat:"4.4 Health/Education/Transit", url:"https://www.fnha.ca", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"VSB - Public Meetings & Reports", cat:"4.4 Health/Education/Transit", url:"https://www.vsb.bc.ca/page/public-meetings-and-reports", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"VSB - Board Meetings", cat:"4.4 Health/Education/Transit", url:"https://www.vsb.bc.ca/page/board-meetings-and-standing-committees", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"VSB - Capital Planning", cat:"4.4 Health/Education/Transit", url:"https://www.vsb.bc.ca/page/3926/capital-projects", status:"Accessible", code:"200", useful:"No", notes:"Returned wrong page (school info)"},
+  {name:"Surrey Schools - Meetings", cat:"4.4 Health/Education/Transit", url:"https://www.surreyschools.ca/page/meetings-and-minutes", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"Surrey Schools - Board Meetings", cat:"4.4 Health/Education/Transit", url:"https://www.surreyschools.ca/page/board-meetings", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"UBC Board of Governors", cat:"4.4 Health/Education/Transit", url:"https://bog.ubc.ca/meeting-packages", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"SFU Board of Governors", cat:"4.4 Health/Education/Transit", url:"https://www.sfu.ca/bog/agendas-minutes-reports.html", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"BCIT Board of Governors", cat:"4.4 Health/Education/Transit", url:"https://www.bcit.ca/about/board-of-governors", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"BC Housing - Supplier Centre", cat:"4.4 Health/Education/Transit", url:"https://www.bchousing.org/partner-services/supplier-centre", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"BC Housing - Bid Centre", cat:"4.4 Health/Education/Transit", url:"https://www.bchousing.org/partner-services/supplier-centre/bid-centre", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"BC Housing - Projects in Dev", cat:"4.4 Health/Education/Transit", url:"https://www.bchousing.org/projects-partners/building-bc", status:"Accessible", code:"200", useful:"Partial", notes:"Links to development projects"},
+  {name:"BC Housing - Homes for BC Map", cat:"4.4 Health/Education/Transit", url:"https://www.bchousing.org/projects-partners/building-bc/homes-for-BC", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"Let's Talk Housing BC", cat:"4.4 Health/Education/Transit", url:"https://letstalkhousingbc.ca", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"TransLink - Board Meetings", cat:"4.4 Health/Education/Transit", url:"https://www.translink.ca/about-us/governance-and-board/board-meetings", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"BC Hydro - Bid Opportunities", cat:"4.4 Health/Education/Transit", url:"https://www.bchydro.com/work-with-us/bid-opportunities.html", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"BC Transit - Procurement", cat:"4.4 Health/Education/Transit", url:"https://bctransit.com/about/governance/procurement-portal", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"BC Transit - Meetings", cat:"4.4 Health/Education/Transit", url:"https://bctransit.com/about/governance/meetings", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"BC Ferries - Procurement", cat:"4.4 Health/Education/Transit", url:"https://www.bcferries.com/about-bc-ferries/procurement", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"BC Ferries - Investor Relations", cat:"4.4 Health/Education/Transit", url:"https://www.bcferries.com/about-bc-ferries/investor-relations", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"YVR - Annual Public Meeting", cat:"4.4 Health/Education/Transit", url:"https://www.yvr.ca/en/about-yvr/community/annual-public-meeting", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+  {name:"YVR - Reports", cat:"4.4 Health/Education/Transit", url:"https://www.yvr.ca/en/about-yvr/reports", status:"Blocked", code:"403", useful:"No", notes:"WebFetch blocked; works in browser"},
+
+  // 4.5 Procurement Portals and Bid Boards (9)
+  {name:"BC Bid", cat:"4.5 Procurement", url:"https://www.bcbid.gov.bc.ca", status:"Accessible", code:"200", useful:"Yes", notes:"ACTION: Free BCeID registration required for full access"},
+  {name:"CanadaBuys", cat:"4.5 Procurement", url:"https://canadabuys.canada.ca", status:"Blocked", code:"403", useful:"No", notes:"ACTION: Free registration required; WebFetch blocked"},
+  {name:"MERX", cat:"4.5 Procurement", url:"https://www.merx.com", status:"Blocked", code:"403", useful:"No", notes:"ACTION: Paid subscription required — confirm MCW account status"},
+  {name:"Vancouver - Bids & RFPs", cat:"4.5 Procurement", url:"https://bids.vancouver.ca", status:"Redirected", code:"301", useful:"Yes", notes:"ACTION: Redirected to bids.sciquest.com — update bookmarks"},
+  {name:"Surrey - Tenders, RFQs & RFPs", cat:"4.5 Procurement", url:"https://www.surrey.ca/city-government/tenders-rfqs-rfps", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Burnaby - Bid Opportunities", cat:"4.5 Procurement", url:"https://www.burnaby.ca/our-city/bids-and-tenders", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Richmond - Bid Opportunities", cat:"4.5 Procurement", url:"https://www.richmond.ca/city-services/bid-opportunities", status:"404 Not Found", code:"404", useful:"No", notes:"WebFetch returned 404; likely works in browser"},
+  {name:"Metro Vancouver - Bidding", cat:"4.5 Procurement", url:"https://www.metrovancouver.org/services/bidding", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page not found — verify URL"},
+  {name:"Metro Vancouver - Awarded Bids", cat:"4.5 Procurement", url:"https://www.metrovancouver.org/services/bidding/awarded-bids", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested"},
+
+  // 4.6 Industry News and Validation Sources (11)
+  {name:"Daily Commercial News (DCN)", cat:"4.6 Industry News", url:"https://canada.constructconnect.com/dcn", status:"Accessible", code:"200", useful:"Partial", notes:"ACTION: Paid subscription — confirm MCW account; headlines visible"},
+  {name:"Journal of Commerce (JOC)", cat:"4.6 Industry News", url:"https://canada.constructconnect.com/joc", status:"Accessible", code:"200", useful:"Yes", notes:"ACTION: Paid subscription — confirm MCW account; BC news visible"},
+  {name:"ConstructConnect Canada", cat:"4.6 Industry News", url:"https://canada.constructconnect.com", status:"Not Tested", code:"N/A", useful:"N/A", notes:"ACTION: Paid subscription — confirm MCW account; covered by DCN/JOC"},
+  {name:"ReNew Canada", cat:"4.6 Industry News", url:"https://www.renewcanada.net", status:"Accessible", code:"200", useful:"Yes", notes:"BC project news available"},
+  {name:"ReNew Canada - Top 100", cat:"4.6 Industry News", url:"https://www.renewcanada.net/top-100-projects", status:"Not Tested", code:"N/A", useful:"N/A", notes:"Not tested; annual publication"},
+  {name:"STOREYS - Vancouver", cat:"4.6 Industry News", url:"https://storeys.com/vancouver", status:"404 Not Found", code:"404", useful:"No", notes:"ACTION: Page returned 404 — verify URL; may have changed"},
+  {name:"Business in Vancouver (BIV)", cat:"4.6 Industry News", url:"https://www.biv.com", status:"Blocked", code:"403", useful:"No", notes:"ACTION: Paywall — confirm MCW subscription status"},
+  {name:"Canadian Architect", cat:"4.6 Industry News", url:"https://www.canadianarchitect.com", status:"Accessible", code:"200", useful:"Partial", notes:"National content; limited BC-specific coverage"},
+  {name:"Urbanized (Daily Hive)", cat:"4.6 Industry News", url:"https://dailyhive.com/vancouver/urbanized", status:"Accessible", code:"200", useful:"Yes", notes:"Excellent BC development coverage; free access"},
+  {name:"Vancouver Sun", cat:"4.6 Industry News", url:"https://vancouversun.com", status:"Not Tested", code:"N/A", useful:"N/A", notes:"ACTION: Soft paywall expected — confirm access"},
+  {name:"The Province", cat:"4.6 Industry News", url:"https://theprovince.com", status:"Not Tested", code:"N/A", useful:"N/A", notes:"ACTION: Soft paywall expected — confirm access"}
+];
+
+// ═══════════════════════════════════════════════════════
+// RENDER: Pipeline Tab
+// ═══════════════════════════════════════════════════════
 document.getElementById("scanDate").textContent = SCAN_DATE;
 document.getElementById("nextScan").textContent = NEXT_SCAN;
 
-// Summary cards
 const totalValue = "$5B+";
-const totalFee = "$40M–$85M";
+const totalFee = "$40M-$85M";
 const activeCount = opportunities.filter(o => o.status !== "Archived").length;
 const highPriority = opportunities.filter(o => o.priority >= 18).length;
 
-const summaryHTML = [
+document.getElementById("summaryCards").innerHTML = [
   {label:"Total Opportunities", value: opportunities.length, detail:`${activeCount} active, ${opportunities.length - activeCount} archived`},
   {label:"Combined Est. Value", value: totalValue, detail:"Across all tracked opportunities"},
   {label:"Combined M&E Fee Potential", value: totalFee, detail:"Estimated addressable scope"},
   {label:"High Priority (18+)", value: highPriority, detail:"Active positioning recommended"},
 ].map(c => `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="detail">${c.detail}</div></div>`).join("");
-document.getElementById("summaryCards").innerHTML = summaryHTML;
 
-// Sector breakdown
 const sectors = {};
 opportunities.forEach(o => { sectors[o.sector] = (sectors[o.sector] || 0) + 1; });
 const sortedSectors = Object.entries(sectors).sort((a,b) => b[1] - a[1]);
@@ -328,12 +553,10 @@ document.getElementById("sectorGrid").innerHTML = sortedSectors.map(([name, coun
   `<div class="sector-chip"><span class="name">${name}</span><span class="count">${count}</span></div>`
 ).join("");
 
-// Populate filter dropdowns
 const sectorSelect = document.getElementById("filterSector");
 sortedSectors.forEach(([s]) => { const opt = document.createElement("option"); opt.value = s; opt.textContent = s; sectorSelect.appendChild(opt); });
 ["Identified","Monitoring","Archived"].forEach(s => { const opt = document.createElement("option"); opt.value = s; opt.textContent = s; document.getElementById("filterStatus").appendChild(opt); });
 
-// Table rendering
 function priorityBadge(p) {
   const cls = p >= 18 ? "p-high" : p >= 14 ? "p-med" : "p-low";
   return `<span class="priority ${cls}">${p}/25</span>`;
@@ -345,15 +568,9 @@ function statusBadge(s) {
 
 function renderTable(data) {
   document.getElementById("tableBody").innerHTML = data.map(o => `<tr>
-    <td>${o.name}</td>
-    <td>${o.sector}</td>
-    <td>${o.client}</td>
-    <td>${o.value}</td>
-    <td>${o.fee}</td>
-    <td>${o.timing}</td>
-    <td>${statusBadge(o.status)}</td>
-    <td>${priorityBadge(o.priority)}</td>
-    <td>${o.action}</td>
+    <td>${o.name}</td><td>${o.sector}</td><td>${o.client}</td><td>${o.value}</td>
+    <td>${o.fee}</td><td>${o.timing}</td><td>${statusBadge(o.status)}</td>
+    <td>${priorityBadge(o.priority)}</td><td>${o.action}</td>
   </tr>`).join("");
 }
 
@@ -364,35 +581,95 @@ function applyFilters() {
   let filtered = opportunities;
   if (sector) filtered = filtered.filter(o => o.sector === sector);
   if (status) filtered = filtered.filter(o => o.status === status);
-  if (search) filtered = filtered.filter(o =>
-    o.name.toLowerCase().includes(search) ||
-    o.client.toLowerCase().includes(search) ||
-    o.action.toLowerCase().includes(search)
-  );
+  if (search) filtered = filtered.filter(o => o.name.toLowerCase().includes(search) || o.client.toLowerCase().includes(search) || o.action.toLowerCase().includes(search));
   renderTable(filtered);
 }
-
 document.getElementById("filterSector").addEventListener("change", applyFilters);
 document.getElementById("filterStatus").addEventListener("change", applyFilters);
 document.getElementById("searchBox").addEventListener("input", applyFilters);
 
-// Sort
-let sortCol = -1, sortAsc = true;
+let sortCol = 7, sortAsc = false;
 function sortTable(col) {
   if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
   const keys = ["name","sector","client","value","fee","timing","status","priority","action"];
-  const key = keys[col];
   opportunities.sort((a,b) => {
-    let va = a[key], vb = b[key];
+    let va = a[keys[col]], vb = b[keys[col]];
     if (typeof va === "number") return sortAsc ? va - vb : vb - va;
     return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
   });
   applyFilters();
 }
-
-// Initial sort by priority descending
-sortCol = 7; sortAsc = false;
 renderTable(opportunities);
+
+// ═══════════════════════════════════════════════════════
+// RENDER: Source Access Audit Tab
+// ═══════════════════════════════════════════════════════
+function accessBadge(s) {
+  const map = {
+    "Accessible":"a-accessible", "Redirected":"a-redirect", "Blocked":"a-blocked",
+    "404 Not Found":"a-404", "Paywall":"a-paywall", "Not Tested":"a-untested"
+  };
+  return `<span class="access-badge ${map[s] || 'a-untested'}">${s}</span>`;
+}
+
+// Audit summary cards
+const accessible = auditSources.filter(s => s.status === "Accessible").length;
+const partial = auditSources.filter(s => s.useful === "Partial").length;
+const blocked = auditSources.filter(s => s.status === "Blocked").length;
+const notFound = auditSources.filter(s => s.status === "404 Not Found").length;
+const redirected = auditSources.filter(s => s.status === "Redirected").length;
+const untested = auditSources.filter(s => s.status === "Not Tested").length;
+const actionRequired = auditSources.filter(s => s.notes.startsWith("ACTION")).length;
+
+document.getElementById("auditSummaryCards").innerHTML = [
+  {label:"Total Sources", value: auditSources.length, detail:"Across 6 source categories", cls:""},
+  {label:"Fully Accessible", value: accessible, detail:`${partial} partially useful`, cls:""},
+  {label:"Blocked / 404", value: blocked + notFound, detail:`${blocked} blocked, ${notFound} not found`, cls:" warn"},
+  {label:"Action Required", value: actionRequired, detail:"Subscriptions, URL fixes, registration", cls:" warn"},
+].map(c => `<div class="card${c.cls}"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="detail">${c.detail}</div></div>`).join("");
+
+// Populate category filter
+const catSelect = document.getElementById("filterCategory");
+const cats = [...new Set(auditSources.map(s => s.cat))];
+cats.forEach(c => { const opt = document.createElement("option"); opt.value = c; opt.textContent = c; catSelect.appendChild(opt); });
+["Accessible","Blocked","404 Not Found","Redirected","Not Tested"].forEach(s => { const opt = document.createElement("option"); opt.value = s; opt.textContent = s; document.getElementById("filterAccess").appendChild(opt); });
+
+function renderAuditTable(data) {
+  let currentCat = "";
+  document.getElementById("auditTableBody").innerHTML = data.map(s => {
+    let catRow = "";
+    if (s.cat !== currentCat) {
+      currentCat = s.cat;
+      catRow = `<tr class="cat-row"><td colspan="7">${s.cat}</td></tr>`;
+    }
+    const actionFlag = s.notes.startsWith("ACTION") ? ' style="font-weight:600; color:#842029;"' : '';
+    return catRow + `<tr>
+      <td>${s.name}</td>
+      <td>${s.cat}</td>
+      <td><a class="url-link" href="${s.url}" target="_blank" rel="noopener">${s.url}</a></td>
+      <td>${accessBadge(s.status)}</td>
+      <td>${s.code}</td>
+      <td>${s.useful}</td>
+      <td${actionFlag}>${s.notes}</td>
+    </tr>`;
+  }).join("");
+}
+
+function applyAuditFilters() {
+  const cat = document.getElementById("filterCategory").value;
+  const access = document.getElementById("filterAccess").value;
+  const search = document.getElementById("searchSources").value.toLowerCase();
+  let filtered = auditSources;
+  if (cat) filtered = filtered.filter(s => s.cat === cat);
+  if (access) filtered = filtered.filter(s => s.status === access);
+  if (search) filtered = filtered.filter(s => s.name.toLowerCase().includes(search) || s.url.toLowerCase().includes(search) || s.notes.toLowerCase().includes(search));
+  renderAuditTable(filtered);
+}
+document.getElementById("filterCategory").addEventListener("change", applyAuditFilters);
+document.getElementById("filterAccess").addEventListener("change", applyAuditFilters);
+document.getElementById("searchSources").addEventListener("input", applyAuditFilters);
+
+renderAuditTable(auditSources);
 </script>
 </body>
 </html>
