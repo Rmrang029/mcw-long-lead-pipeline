@@ -26,6 +26,10 @@
     line-height: 1.5;
   }
   body.locked { overflow: hidden; }
+  body.locked .header,
+  body.locked .tab-bar,
+  body.locked .tab-content,
+  body.locked .footer { display: none !important; }
 
   /* ── Login Overlay ── */
   .login-overlay {
@@ -318,7 +322,7 @@
   }
 </style>
 </head>
-<body>
+<body class="locked">
 
 <!-- Login Overlay -->
 <div class="login-overlay" id="loginOverlay">
@@ -454,12 +458,10 @@ const CORRECT_HASH = "must-compute";
   window._correctHash = correctHash;
 
   // Check if already authenticated this session
-  const stored = window.sessionStorage && sessionStorage.getItem("mcw_auth");
+  const stored = window.sessionStorage && sessionStorage.getItem("mcw_auth_v2");
   if (stored === correctHash) {
     document.getElementById("loginOverlay").classList.add("hidden");
     document.body.classList.remove("locked");
-  } else {
-    document.body.classList.add("locked");
   }
 })();
 
@@ -468,7 +470,7 @@ async function handleLogin(e) {
   const input = document.getElementById("loginPassword").value;
   const hash = await sha256(input);
   if (hash === window._correctHash) {
-    if (window.sessionStorage) sessionStorage.setItem("mcw_auth", hash);
+    if (window.sessionStorage) sessionStorage.setItem("mcw_auth_v2", hash);
     document.getElementById("loginOverlay").classList.add("hidden");
     document.body.classList.remove("locked");
   } else {
