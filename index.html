@@ -85,6 +85,59 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
+  /* Action buttons */
+  .btn-decline {
+    padding: 3px 10px; font-size: 11px; font-weight: 600; border: 1px solid var(--red);
+    background: var(--white); color: var(--red); border-radius: 4px; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-decline:hover { background: var(--red); color: var(--white); }
+  .btn-restore {
+    padding: 3px 10px; font-size: 11px; font-weight: 600; border: 1px solid var(--mcw-green);
+    background: var(--white); color: var(--mcw-green); border-radius: 4px; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-restore:hover { background: var(--mcw-green); color: var(--white); }
+  .btn-delete {
+    padding: 3px 10px; font-size: 11px; font-weight: 600; border: 1px solid #666;
+    background: var(--white); color: #666; border-radius: 4px; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-delete:hover { background: #666; color: var(--white); }
+  .btn-group { display: flex; gap: 6px; }
+
+  /* Confirm dialog */
+  .confirm-overlay {
+    position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .confirm-overlay.hidden { display: none; }
+  .confirm-box {
+    background: var(--white); border-radius: 8px; padding: 28px 32px;
+    max-width: 440px; width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  }
+  .confirm-box h3 { font-size: 15px; color: var(--black-100); margin-bottom: 8px; }
+  .confirm-box p { font-size: 13px; color: var(--black-80); margin-bottom: 20px; line-height: 1.5; }
+  .confirm-box .confirm-name { font-weight: 700; color: var(--black-100); }
+  .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .confirm-actions button {
+    padding: 8px 20px; font-family: Arial, sans-serif; font-size: 13px; font-weight: 600;
+    border: none; border-radius: 5px; cursor: pointer;
+  }
+  .confirm-cancel { background: #E0E0E0; color: var(--black-100); }
+  .confirm-cancel:hover { background: #CCC; }
+  .confirm-danger { background: var(--red); color: var(--white); }
+  .confirm-danger:hover { background: #B02A37; }
+
+  /* Save indicator */
+  .save-indicator {
+    position: fixed; bottom: 20px; right: 20px; z-index: 9000;
+    background: var(--mcw-green); color: var(--white); padding: 10px 20px;
+    border-radius: 6px; font-size: 12px; font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2); transition: opacity 0.3s;
+  }
+  .save-indicator.hidden { opacity: 0; pointer-events: none; }
+
   .summary {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px; padding: 24px 40px; max-width: 1400px; margin: 0 auto;
@@ -215,6 +268,7 @@
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('pipeline')">Pipeline Tracker</button>
   <button class="tab-btn" onclick="switchTab('sources')">Source Access Audit</button>
+  <button class="tab-btn" onclick="switchTab('declined')">Declined Opportunities <span id="declinedCount" style="background:rgba(255,255,255,0.3);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:4px;"></span></button>
 </div>
 
 <div id="tab-pipeline" class="tab-content active">
@@ -239,6 +293,7 @@
         <th onclick="sortTable(7)">Status <span class="sort-arrow">&#9660;</span></th>
         <th onclick="sortTable(8)">Priority <span class="sort-arrow">&#9660;</span></th>
         <th onclick="sortTable(9)">Next Action <span class="sort-arrow">&#9660;</span></th>
+        <th style="cursor:default;min-width:80px;">Actions</th>
       </tr></thead>
       <tbody id="tableBody"></tbody>
     </table>
@@ -263,6 +318,38 @@
     </table>
   </div>
 </div>
+
+<div id="tab-declined" class="tab-content">
+  <div class="summary" id="declinedSummaryCards"></div>
+  <div class="controls">
+    <label>Search:</label>
+    <input type="text" id="searchDeclined" placeholder="Search declined opportunities...">
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Opportunity</th><th>Sector</th><th>Client / Owner</th><th>Source</th>
+        <th>Est. Value</th><th>M&amp;E Fee</th><th>Priority</th><th>Date Declined</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="declinedTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="confirm-overlay hidden" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Confirm Action</h3>
+    <p id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="confirm-danger" id="confirmAction" onclick="executeConfirm()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save indicator -->
+<div class="save-indicator hidden" id="saveIndicator">Changes saved</div>
 
 <div class="footer">
   <strong>MCW Consultants Ltd.</strong> — Long Lead Fishing Plan &nbsp;|&nbsp;
@@ -316,8 +403,14 @@ function switchTab(tab) {
   event.target.classList.add('active');
 }
 
-// Pipeline data — auto-generated from tracker
-const opportunities = [
+// ═══════════════════════════════════════════════════════
+// STATE MANAGEMENT — pipeline-state.json in GitHub repo
+// ═══════════════════════════════════════════════════════
+const STATE_URL = "https://raw.githubusercontent.com/Rmrang029/mcw-long-lead-pipeline/main/pipeline-state.json";
+const STATE_API = "https://api.github.com/repos/Rmrang029/mcw-long-lead-pipeline/contents/pipeline-state.json";
+
+// All opportunities from the scan
+const allOpportunities = [
   {name:"Vancouver General Hospital — Campus Redevelopment", sector:"Healthcare", client:"Vancouver Coastal Health / PHSA", source:"Daily Hive Urbanized — VGH campus master plan rezoning (Feb 2026)", sourceUrl:"https://dailyhive.com/vancouver", value:"$2B+ (multi-phase)", fee:"$8M–$15M (multi-phase)", timing:"Interim rezoning Summer 2026; Phase 1 construction 2027+", status:"Identified", priority:22, action:"Monitor rezoning public hearing schedule; identify architect team"},
   {name:"Newton Centre Master Development Plan — Surrey/TransLink (41 Acres)", sector:"Mixed-Use High-Rise", client:"Surrey City Development Corporation / TransLink", source:"Daily Hive Urbanized + STOREYS — Newton Centre plan unveiled (Mar 2026)", sourceUrl:"https://dailyhive.com/vancouver", value:"$1B+ (over 30 years; 2.2M sq ft)", fee:"$5M-$10M (combined across phases)", timing:"SCDC board approval end-2025; council approval early 2026; phased implementation over 30 years; community centre construction late 2026", status:"Identified", priority:22, action:"Position early with SCDC and TransLink Real Estate; track community centre design team procurement; identify development partners for tower phases"},
   {name:"Skeena Terrace Redevelopment — 1,700 Units / 7 Phases", sector:"Residential High-Rise", client:"BC Housing", source:"BC Gov News / City of Vancouver — Skeena Terrace Policy Statement (2024–2026)", sourceUrl:"https://news.gov.bc.ca", value:"$800M+ (all phases)", fee:"$3M–$6M (all phases)", timing:"Phase 1 construction started Fall 2025; Phases 2–7 design/procurement 2027–2035+", status:"Identified", priority:21, action:"Reach out to BC Housing and Perkins&Will re: M&E teaming for Phase 2+"},
@@ -369,6 +462,7 @@ const opportunities = [
   {name:"West Vancouver Ambleside Housing Plan — Multi-Phase Density", sector:"Mixed-Use High-Rise", client:"District of West Vancouver", source:"BC Gov News HMA — Advancing Ambleside Plan (Apr 2026)", sourceUrl:"https://news.gov.bc.ca", value:"TBD — multi-phase, multiple sites", fee:"TBD per project", timing:"Plan being advanced 2026; tower/housing project procurement 2027+", status:"Identified", priority:16, action:"Track Ambleside plan adoption; monitor for individual project announcements; engage District planning early"},
   {name:"Langley Smith Neighbourhood School (Future Middle/Secondary)", sector:"Education", client:"Langley School District (SD35) / Province of BC", source:"BC Gov News — Langley Smith neighbourhood land acquisition (2026)", sourceUrl:"https://news.gov.bc.ca", value:"$80M–$120M (future middle + secondary)", fee:"$800K–$1.5M", timing:"Land acquired ($42.1M); building funding/design TBD — long lead (12–24+ months)", status:"Monitoring", priority:16, action:"Early positioning with SD35; monitor capital plan for building funding approval"},
   {name:"YVR 20-Year Capital Program / Sea Island Climate Resilience", sector:"Airport", client:"Vancouver Airport Authority (YVR)", source:"YVR Major Projects + Daily Hive Urbanized (2026)", sourceUrl:"https://dailyhive.com/vancouver", value:"$9.1B program (20 yrs / 75 projects); Sea Island Climate Resilience sub-program", fee:"Program-level; packages $200K–$2M+", timing:"Ongoing 20-year program; individual packages roll out continuously", status:"Monitoring", priority:16, action:"Map YVR consultant roster and upcoming building packages; position as M&E sub on terminal/airside facility packages"},
+  {name:"Pinnacle Metrotown Twin-Tower — 87 + 77 Storeys (Burnaby)", sector:"Mixed-Use High-Rise", client:"Pinnacle International", source:"Vancouver Is Awesome / Daily Hive (May 2026)", sourceUrl:"https://www.vancouverisawesome.com/local-news/colossal-80-storey-73-storey-towers-approved-in-burnaby-with-1400-condos-9561791", value:"~$1B+ (Phase 1, two towers / ~1,500 units)", fee:"$2M–$4M+ (if pursued)", timing:"Height-increase rezoning approved 2026; pre-construction; multi-phase; procurement TBD", status:"Identified", priority:16, action:"Identify architect/M&E team already engaged at rezoning stage; assess relationship; position for later phases"},
   {name:"Marpole Community Centre — Vancouver", sector:"Sports & Recreation", client:"City of Vancouver", source:"Daily Hive Urbanized / City of Vancouver (2024–2026)", sourceUrl:"https://dailyhive.com/vancouver", value:"$91M", fee:"$400K–$700K", timing:"Under construction; completion Q4 2026", status:"Monitoring", priority:15, action:"Track for lessons learned; note mass timber + Passive House approach"},
   {name:"CFB Esquimalt — 480-Unit Housing Complex", sector:"Military", client:"Department of National Defence / Defence Construction Canada", source:"DND / DCC announcements (2024–2026)", sourceUrl:"https://www.dcc-cdc.gc.ca", value:"$150M–$250M (estimated)", fee:"$1M–$2M", timing:"Design contract awarded Aug 2024; construction early 2030s completion", status:"Monitoring", priority:15, action:"Contact DCC Victoria office re: M&E subcontract opportunities"},
   {name:"North Shore Neighbourhood House — Phase 2 (179 Units)", sector:"Residential High-Rise", client:"BC Housing", source:"BC Gov News (Jan 2026)", sourceUrl:"https://news.gov.bc.ca", value:"$60M–$80M (estimated)", fee:"$300K–$500K", timing:"Phase 1 complete; Phase 2 design/procurement TBD", status:"Identified", priority:15, action:"Inquire about Phase 2 timeline and design team procurement"},
@@ -386,37 +480,143 @@ const opportunities = [
   {name:"Esquimalt Public Safety Building", sector:"Public Safety", client:"Township of Esquimalt / CRD", source:"JOC / Township of Esquimalt (2024–2026)", sourceUrl:"https://canada.constructconnect.com/joc", value:"$48M", fee:"$250K–$400K", timing:"Construction started May 2024; completion Fall 2026", status:"Monitoring", priority:14, action:"Monitor for completion lessons learned; note specialized fire hall M&E"},
   {name:"DND Housing — 19 Wing Comox (52 Units)", sector:"Military", client:"Department of National Defence", source:"DND / Canada.ca (Dec 2025)", sourceUrl:"https://www.canada.ca/en/department-national-defence.html", value:"$19.1M", fee:"$50K–$100K", timing:"Occupancy begins Summer 2026", status:"Monitoring", priority:13, action:"Monitor for retrofit/renovation scope; note as relationship builder for DND pipeline"},
   {name:"Confederation Park Community Centre — Burnaby (On Hold)", sector:"Sports & Recreation", client:"City of Burnaby", source:"Daily Hive Urbanized + Burnaby Beacon — funding gap / cancellation (2024–25); Burnaby $914M civic program", sourceUrl:"https://dailyhive.com/vancouver", value:"$160M (reduced option) / was ~$215M", fee:"$1.5M–$2.5M (if revived)", timing:"Cancelled Jan 2025 ($31M funding gap); possible reduced-scope ($160M) revival — watch", status:"Monitoring", priority:13, action:"Monitor Burnaby capital plan for revival; track Burnaby's broader $914M civic recreation program"},
+  {name:"Surrey Downtown High-Rise Approvals — 3 Towers (Apr 2026)", sector:"Mixed-Use High-Rise", client:"Various private developers / City of Surrey", source:"Surrey Now-Leader (Apr 27, 2026)", sourceUrl:"https://surreynowleader.com/2026/04/27/surrey-council-approves-three-high-rise-projects/", value:"~$300M+ combined", fee:"$600K–$1.2M combined (if pursued)", timing:"Approved Apr 2026; individual procurement timelines TBD", status:"Monitoring", priority:13, action:"Identify developers behind the three approvals; map relationships; watch for design-team formation"},
   {name:"Pitt Meadows RCMP Detachment", sector:"Public Safety", client:"City of Pitt Meadows", source:"ReNew Canada (Mar 2026)", sourceUrl:"https://www.renewcanada.net", value:"$20M–$30M (estimated)", fee:"$150K–$250K", timing:"Construction complete March 2026", status:"Archived", priority:12, action:"Archive — project complete. Note as reference for future RCMP/police facility pursuits."},
   {name:"Katzie First Nation Housing — 40 Homes (Pitt Meadows)", sector:"Residential High-Rise", client:"Katzie First Nation", source:"Journal of Commerce (Apr 10, 2026)", sourceUrl:"https://canada.constructconnect.com/joc", value:"$15M–$25M (estimated)", fee:"$100K–$200K", timing:"Completed April 2026", status:"Monitoring", priority:12, action:"Note for relationship building; First Nations housing is growing sector"},
   {name:"Quw'utsun Valley Hospital (Cowichan District Replacement)", sector:"Healthcare", client:"Island Health / Province of BC", source:"Infrastructure BC — Construction 75% complete (May 2026)", sourceUrl:"https://www.infrastructurebc.com", value:"$1.5B+ (204 beds, replacement community-level hospital)", fee:"N/A — design team in place (Alliance: EllisDon + Parkin)", timing:"Construction 75% complete; opening 2027", status:"Archived", priority:10, action:"Archive — too late to pursue. Use as Cowichan reference project; note Alliance delivery model precedent for future pursuits"},
   {name:"Dawson Creek and District Hospital Redevelopment", sector:"Healthcare", client:"Northern Health / Province of BC", source:"Energeticcity.ca — Construction 2 months ahead (Feb 2026)", sourceUrl:"", value:"$300M+ (estimated regional hospital)", fee:"N/A — design team in place (Graham Design-Builders)", timing:"Substantial completion advanced from Nov 2026 to Sep 29, 2026", status:"Archived", priority:10, action:"Archive — too late to pursue. Reference project for northern BC healthcare pursuits and lessons learned"}
 ];
 
-// Render pipeline
-const totalValue = "$8B+";
-const totalFee = "$60M-$120M+";
-const activeCount = opportunities.filter(o => o.status !== "Archived").length;
-const highPriority = opportunities.filter(o => o.priority >= 18).length;
+// State: which are declined, which are marked for deletion
+let state = { declined: [], deleted: [] };
+// declined = [{...opp, dateDeclined: "..."}]
+// deleted = [{...opp, dateDeclined: "...", dateDeleted: "..."}]
 
-document.getElementById("summaryCards").innerHTML = [
-  {label:"Total Opportunities", value: opportunities.length, detail:`${activeCount} active, ${opportunities.length - activeCount} archived`},
-  {label:"Combined Est. Value", value: totalValue, detail:"Across all tracked opportunities"},
-  {label:"Combined M&E Fee Potential", value: totalFee, detail:"Estimated addressable scope"},
-  {label:"High Priority (18+)", value: highPriority, detail:"Active positioning recommended"},
-].map(c => `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="detail">${c.detail}</div></div>`).join("");
+async function loadState() {
+  try {
+    const resp = await fetch(STATE_URL + "?t=" + Date.now());
+    if (resp.ok) {
+      state = await resp.json();
+      if (!state.declined) state.declined = [];
+      if (!state.deleted) state.deleted = [];
+    }
+  } catch(e) { /* no state file yet — first run */ }
+}
 
-const sectors = {};
-opportunities.forEach(o => { sectors[o.sector] = (sectors[o.sector] || 0) + 1; });
-const sortedSectors = Object.entries(sectors).sort((a,b) => b[1] - a[1]);
-document.getElementById("sectorGrid").innerHTML = sortedSectors.map(([name, count]) =>
-  `<div class="sector-chip"><span class="name">${name}</span><span class="count">${count}</span></div>`
-).join("");
+async function saveState() {
+  // Save to GitHub via API using a token stored in sessionStorage
+  const token = sessionStorage.getItem("gh_token");
+  if (!token) {
+    // Prompt for token on first save
+    const t = prompt("Enter your GitHub token to save changes (one-time per session):");
+    if (!t) return;
+    sessionStorage.setItem("gh_token", t);
+    return saveState();
+  }
+  try {
+    // Get current file SHA
+    let sha = null;
+    try {
+      const r = await fetch(STATE_API, {headers: {"Authorization": "token " + token}});
+      if (r.ok) { const d = await r.json(); sha = d.sha; }
+    } catch(e) {}
+    const body = {
+      message: "Update pipeline state — " + new Date().toISOString().split("T")[0],
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2)))),
+    };
+    if (sha) body.sha = sha;
+    const resp = await fetch(STATE_API, {
+      method: "PUT",
+      headers: {"Authorization": "token " + token, "Content-Type": "application/json"},
+      body: JSON.stringify(body)
+    });
+    if (resp.ok) {
+      showSaveIndicator("Changes saved to pipeline");
+    } else {
+      const err = await resp.json();
+      if (err.message && err.message.includes("Bad credentials")) {
+        sessionStorage.removeItem("gh_token");
+        alert("GitHub token invalid. Please try again.");
+      } else {
+        alert("Save failed: " + (err.message || "Unknown error"));
+      }
+    }
+  } catch(e) {
+    alert("Save failed: " + e.message);
+  }
+}
 
-const sectorSelect = document.getElementById("filterSector");
-sortedSectors.forEach(([s]) => { const opt = document.createElement("option"); opt.value = s; opt.textContent = s; sectorSelect.appendChild(opt); });
-const statuses = [...new Set(opportunities.map(o => o.status))].sort();
-statuses.forEach(s => { const opt = document.createElement("option"); opt.value = s; opt.textContent = s; document.getElementById("filterStatus").appendChild(opt); });
+function showSaveIndicator(msg) {
+  const el = document.getElementById("saveIndicator");
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  setTimeout(() => el.classList.add("hidden"), 2000);
+}
 
+// Get active opportunities (not declined or deleted)
+function getActiveOpps() {
+  const declinedNames = new Set(state.declined.map(d => d.name));
+  const deletedNames = new Set(state.deleted.map(d => d.name));
+  return allOpportunities.filter(o => !declinedNames.has(o.name) && !deletedNames.has(o.name));
+}
+
+// ═══════════════════════════════════════════════════════
+// CONFIRM DIALOG
+// ═══════════════════════════════════════════════════════
+let pendingConfirmAction = null;
+function showConfirm(title, message, actionLabel, onConfirm) {
+  document.getElementById("confirmTitle").textContent = title;
+  document.getElementById("confirmMessage").innerHTML = message;
+  document.getElementById("confirmAction").textContent = actionLabel;
+  document.getElementById("confirmOverlay").classList.remove("hidden");
+  pendingConfirmAction = onConfirm;
+}
+function closeConfirm() {
+  document.getElementById("confirmOverlay").classList.add("hidden");
+  pendingConfirmAction = null;
+}
+function executeConfirm() {
+  if (pendingConfirmAction) pendingConfirmAction();
+  closeConfirm();
+}
+
+// ═══════════════════════════════════════════════════════
+// DECLINE / RESTORE / DELETE ACTIONS
+// ═══════════════════════════════════════════════════════
+function declineOpp(name) {
+  const opp = allOpportunities.find(o => o.name === name);
+  if (!opp) return;
+  state.declined.push({...opp, dateDeclined: new Date().toISOString().split("T")[0]});
+  renderAll();
+  saveState();
+}
+
+function restoreOpp(name) {
+  state.declined = state.declined.filter(d => d.name !== name);
+  renderAll();
+  saveState();
+}
+
+function requestDelete(name) {
+  showConfirm(
+    "Permanently Delete Opportunity",
+    `Are you sure you want to delete <span class="confirm-name">${name}</span>?<br><br>This opportunity will be logged in the continuity tracker and will not be re-added in future scans.`,
+    "Delete Permanently",
+    () => {
+      const opp = state.declined.find(d => d.name === name);
+      if (opp) {
+        state.deleted.push({...opp, dateDeleted: new Date().toISOString().split("T")[0]});
+        state.declined = state.declined.filter(d => d.name !== name);
+      }
+      renderAll();
+      saveState();
+    }
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════════════
 function priorityBadge(p) {
   const cls = p >= 18 ? "p-high" : p >= 14 ? "p-med" : "p-low";
   return `<span class="priority ${cls}">${p}/25</span>`;
@@ -429,40 +629,108 @@ function sourceLink(src, url) {
   if (url) return `<a class="url-link" href="${url}" target="_blank" rel="noopener">${src}</a>`;
   return src;
 }
-function renderTable(data) {
+
+function renderPipelineTable(data) {
   document.getElementById("tableBody").innerHTML = data.map(o => `<tr>
     <td>${o.name}</td><td>${o.sector}</td><td>${o.client}</td>
     <td>${sourceLink(o.source, o.sourceUrl)}</td>
     <td>${o.value}</td><td>${o.fee}</td><td>${o.timing}</td><td>${statusBadge(o.status)}</td>
     <td>${priorityBadge(o.priority)}</td><td>${o.action}</td>
+    <td><button class="btn-decline" onclick="declineOpp('${o.name.replace(/'/g,"\\'")}')">Decline</button></td>
   </tr>`).join("");
 }
+
+function renderDeclinedTable() {
+  const search = (document.getElementById("searchDeclined")?.value || "").toLowerCase();
+  let data = state.declined;
+  if (search) data = data.filter(o => o.name.toLowerCase().includes(search) || o.sector.toLowerCase().includes(search));
+  document.getElementById("declinedTableBody").innerHTML = data.map(o => `<tr>
+    <td>${o.name}</td><td>${o.sector}</td><td>${o.client}</td>
+    <td>${sourceLink(o.source||"", o.sourceUrl||"")}</td>
+    <td>${o.value}</td><td>${o.fee}</td><td>${priorityBadge(o.priority)}</td>
+    <td>${o.dateDeclined || "—"}</td>
+    <td><div class="btn-group">
+      <button class="btn-restore" onclick="restoreOpp('${o.name.replace(/'/g,"\\'")}')">Restore</button>
+      <button class="btn-delete" onclick="requestDelete('${o.name.replace(/'/g,"\\'")}')">Delete</button>
+    </div></td>
+  </tr>`).join("");
+  // Update count badge
+  document.getElementById("declinedCount").textContent = state.declined.length || "";
+  // Summary cards
+  document.getElementById("declinedSummaryCards").innerHTML = [
+    {label:"Declined", value: state.declined.length, detail:"Not currently being pursued"},
+    {label:"Permanently Deleted", value: state.deleted.length, detail:"Will not be re-added by scanner"},
+  ].map(c => `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="detail">${c.detail}</div></div>`).join("");
+}
+
 function applyFilters() {
   const sector = document.getElementById("filterSector").value;
   const status = document.getElementById("filterStatus").value;
   const search = document.getElementById("searchBox").value.toLowerCase();
-  let filtered = opportunities;
+  let filtered = getActiveOpps();
   if (sector) filtered = filtered.filter(o => o.sector === sector);
   if (status) filtered = filtered.filter(o => o.status === status);
   if (search) filtered = filtered.filter(o => o.name.toLowerCase().includes(search) || o.client.toLowerCase().includes(search) || o.source.toLowerCase().includes(search) || o.action.toLowerCase().includes(search));
-  renderTable(filtered);
+  renderPipelineTable(filtered);
 }
+
+function renderSummary() {
+  const active = getActiveOpps();
+  const activeCount = active.filter(o => o.status !== "Archived").length;
+  const highPriority = active.filter(o => o.priority >= 18).length;
+  document.getElementById("summaryCards").innerHTML = [
+    {label:"Active Opportunities", value: active.length, detail:`${activeCount} active, ${active.length - activeCount} archived`},
+    {label:"Combined Est. Value", value: "$8B+", detail:"Across active opportunities"},
+    {label:"High Priority (18+)", value: highPriority, detail:"Active positioning recommended"},
+    {label:"Declined", value: state.declined.length, detail:"Moved to Declined tab"},
+  ].map(c => `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="detail">${c.detail}</div></div>`).join("");
+
+  const sectors = {};
+  active.forEach(o => { sectors[o.sector] = (sectors[o.sector] || 0) + 1; });
+  const sortedSectors = Object.entries(sectors).sort((a,b) => b[1] - a[1]);
+  document.getElementById("sectorGrid").innerHTML = sortedSectors.map(([name, count]) =>
+    `<div class="sector-chip"><span class="name">${name}</span><span class="count">${count}</span></div>`
+  ).join("");
+}
+
+function renderAll() {
+  renderSummary();
+  applyFilters();
+  renderDeclinedTable();
+}
+
+// Filters
 document.getElementById("filterSector").addEventListener("change", applyFilters);
 document.getElementById("filterStatus").addEventListener("change", applyFilters);
 document.getElementById("searchBox").addEventListener("input", applyFilters);
+document.getElementById("searchDeclined")?.addEventListener("input", renderDeclinedTable);
 
-let sortCol = 7, sortAsc = false;
+// Populate filter dropdowns
+const statuses = [...new Set(allOpportunities.map(o => o.status))].sort();
+statuses.forEach(s => { const opt = document.createElement("option"); opt.value = s; opt.textContent = s; document.getElementById("filterStatus").appendChild(opt); });
+
+let sortCol = 8, sortAsc = false;
 function sortTable(col) {
   if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
   const keys = ["name","sector","client","source","value","fee","timing","status","priority","action"];
-  opportunities.sort((a,b) => {
+  allOpportunities.sort((a,b) => {
     let va = a[keys[col]], vb = b[keys[col]];
     if (typeof va === "number") return sortAsc ? va - vb : vb - va;
     return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
   });
   applyFilters();
 }
-renderTable(opportunities);
+
+// Initialize: load state then render
+loadState().then(() => {
+  renderAll();
+  // Populate sector filter from active opps
+  const sectors = {};
+  getActiveOpps().forEach(o => { sectors[o.sector] = (sectors[o.sector] || 0) + 1; });
+  const sortedSectors = Object.entries(sectors).sort((a,b) => b[1] - a[1]);
+  const sectorSelect = document.getElementById("filterSector");
+  sortedSectors.forEach(([s]) => { const opt = document.createElement("option"); opt.value = s; opt.textContent = s; sectorSelect.appendChild(opt); });
+});
 
 // Source Access Audit
 const auditSources = [
