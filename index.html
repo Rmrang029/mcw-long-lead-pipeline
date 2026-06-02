@@ -496,12 +496,21 @@ let state = { declined: [], deleted: [] };
 // deleted = [{...opp, dateDeclined: "...", dateDeleted: "..."}]
 
 async function loadState() {
+  // Read through the relay first — always fresh (bypasses GitHub's ~5-min CDN cache).
   try {
-    const resp = await fetch(STATE_URL + "?t=" + Date.now());
+    const r = await fetch(RELAY_URL, { method: "GET" });
+    if (r.ok) {
+      const d = await r.json();
+      state = { declined: d.declined || [], deleted: d.deleted || [] };
+      return;
+    }
+  } catch(e) { /* relay not reachable — fall through */ }
+  // Fallback: raw GitHub (may be up to ~5 min stale until the relay GET is live).
+  try {
+    const resp = await fetch(STATE_URL + "?t=" + Date.now(), { cache: "no-store" });
     if (resp.ok) {
-      state = await resp.json();
-      if (!state.declined) state.declined = [];
-      if (!state.deleted) state.deleted = [];
+      const d = await resp.json();
+      state = { declined: d.declined || [], deleted: d.deleted || [] };
     }
   } catch(e) { /* no state file yet — first run */ }
 }
