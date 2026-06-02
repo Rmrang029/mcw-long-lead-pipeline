@@ -408,6 +408,8 @@ function switchTab(tab) {
 // ═══════════════════════════════════════════════════════
 const STATE_URL = "https://raw.githubusercontent.com/Rmrang029/mcw-long-lead-pipeline/main/pipeline-state.json";
 const STATE_API = "https://api.github.com/repos/Rmrang029/mcw-long-lead-pipeline/contents/pipeline-state.json";
+const RELAY_URL = "https://mcw-pipeline-relay.collinvaness.workers.dev";
+const RELAY_PASSPHRASE = "Ranger029!";
 
 // All opportunities from the scan
 const allOpportunities = [
@@ -511,45 +513,27 @@ async function loadState() {
 }
 
 async function saveState() {
-  // Save to GitHub via API using a token stored in sessionStorage
-  const token = sessionStorage.getItem("gh_token");
-  if (!token) {
-    // Prompt for token on first save
-    const t = prompt("Enter your GitHub token to save changes (one-time per session):");
-    if (!t) return;
-    sessionStorage.setItem("gh_token", t);
-    return saveState();
-  }
+  // Save via the Cloudflare relay (holds the GitHub token server-side).
+  // No GitHub token is needed in the browser.
   try {
-    // Get current file SHA
-    let sha = null;
-    try {
-      const r = await fetch(STATE_API, {headers: {"Authorization": "token " + token}});
-      if (r.ok) { const d = await r.json(); sha = d.sha; }
-    } catch(e) {}
-    const body = {
-      message: "Update pipeline state — " + new Date().toISOString().split("T")[0],
-      content: btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2)))),
-    };
-    if (sha) body.sha = sha;
-    const resp = await fetch(STATE_API, {
-      method: "PUT",
-      headers: {"Authorization": "token " + token, "Content-Type": "application/json"},
-      body: JSON.stringify(body)
+    const resp = await fetch(RELAY_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ passphrase: RELAY_PASSPHRASE, state })
     });
     if (resp.ok) {
       showSaveIndicator("Changes saved to pipeline");
     } else {
-      const err = await resp.json();
-      if (err.message && err.message.includes("Bad credentials")) {
-        sessionStorage.removeItem("gh_token");
-        alert("GitHub token invalid. Please try again.");
-      } else {
-        alert("Save failed: " + (err.message || "Unknown error"));
-      }
+      let msg = "Save failed (" + resp.status + ")";
+      try { const e = await resp.json(); if (e && e.error) msg = "Save failed: " + e.error; } catch(_) {}
+      alert(msg + "
+
+Your change shows here but was not saved for the team. Please try again.");
     }
   } catch(e) {
-    alert("Save failed: " + e.message);
+    alert("Could not reach the save service. Your change shows here but was not saved for the team. Please try again.
+
+(" + e.message + ")");
   }
 }
 
