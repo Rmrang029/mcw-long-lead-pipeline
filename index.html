@@ -360,26 +360,20 @@
 
 <script>
 // Authentication
-async function sha256(message) {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-(async function() {
-  const correctHash = await sha256("mcw2026");
-  window._correctHash = correctHash;
-  const stored = window.sessionStorage && sessionStorage.getItem("mcw_auth_v2");
-  if (stored === correctHash) {
-    document.getElementById("loginOverlay").classList.add("hidden");
-    document.body.classList.remove("locked");
-  }
+const PAGE_PASSWORD = "mcw2026"; // client-side gate only — password is visible in page source
+(function() {
+  try {
+    if (window.sessionStorage && sessionStorage.getItem("mcw_auth_v2") === PAGE_PASSWORD) {
+      document.getElementById("loginOverlay").classList.add("hidden");
+      document.body.classList.remove("locked");
+    }
+  } catch (e) {}
 })();
-async function handleLogin(e) {
+function handleLogin(e) {
   e.preventDefault();
-  const input = document.getElementById("loginPassword").value;
-  const hash = await sha256(input);
-  if (hash === window._correctHash) {
-    if (window.sessionStorage) sessionStorage.setItem("mcw_auth_v2", hash);
+  const input = (document.getElementById("loginPassword").value || "").trim();
+  if (input === PAGE_PASSWORD) {
+    try { if (window.sessionStorage) sessionStorage.setItem("mcw_auth_v2", PAGE_PASSWORD); } catch (e) {}
     document.getElementById("loginOverlay").classList.add("hidden");
     document.body.classList.remove("locked");
   } else {
