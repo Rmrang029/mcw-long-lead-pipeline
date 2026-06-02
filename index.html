@@ -520,14 +520,10 @@ async function saveState() {
     } else {
       let msg = "Save failed (" + resp.status + ")";
       try { const e = await resp.json(); if (e && e.error) msg = "Save failed: " + e.error; } catch(_) {}
-      alert(msg + "
-
-Your change shows here but was not saved for the team. Please try again.");
+      alert(msg + " — your change shows here but was not saved for the team. Please try again.");
     }
   } catch(e) {
-    alert("Could not reach the save service. Your change shows here but was not saved for the team. Please try again.
-
-(" + e.message + ")");
+    alert("Could not reach the save service. Your change shows here but was not saved for the team. Please try again. (" + e.message + ")");
   }
 }
 
