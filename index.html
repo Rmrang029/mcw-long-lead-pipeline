@@ -105,6 +105,29 @@
   }
   .btn-delete:hover { background: #666; color: var(--white); }
   .btn-group { display: flex; gap: 6px; }
+  .btn-accept {
+    padding: 3px 10px; font-size: 11px; font-weight: 600; border: 1px solid var(--mcw-green);
+    background: var(--white); color: var(--mcw-green); border-radius: 4px; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-accept:hover { background: var(--mcw-green); color: var(--white); }
+  .accepted-card { background: var(--white); border: 1px solid var(--border-gray); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .accepted-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .accepted-name { font-weight: 700; font-size: 14px; color: var(--black-100); }
+  .accepted-sub { font-size: 12px; color: var(--black-80); margin-top: 2px; }
+  .comments-wrap { margin-top: 10px; background: #f7f9f8; border: 1px solid var(--border-gray); border-radius: 6px; padding: 10px 12px; }
+  .comment { font-size: 12px; color: var(--black-80); padding: 6px 0; border-bottom: 1px dashed var(--border-gray); }
+  .comment:last-of-type { border-bottom: none; }
+  .comment .meta { font-weight: 700; color: var(--black-100); }
+  .comment .ts { color: #888; font-weight: 400; font-size: 11px; }
+  .comment-form { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .comment-form input { font-family: Arial, sans-serif; font-size: 12px; padding: 5px 8px; border: 1px solid var(--border-gray); border-radius: 4px; }
+  .comment-form input.cname { width: 130px; }
+  .comment-form input.ctext { flex: 1; min-width: 180px; }
+  .comment-form button { font-size: 11px; font-weight: 600; padding: 5px 12px; border: 1px solid var(--mcw-green); background: var(--mcw-green); color: var(--white); border-radius: 4px; cursor: pointer; }
+  .plan-badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px; }
+  .plan-pending { background:#fde9c8; color:#8a5a00; }
+  .plan-done { background:#d6f0e0; color:#066b3a; }
 
   /* Confirm dialog */
   .confirm-overlay {
@@ -267,6 +290,7 @@
 
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('pipeline')">Pipeline Tracker</button>
+  <button class="tab-btn" onclick="switchTab('accepted')">Accepted <span id="acceptedCount" style="background:rgba(255,255,255,0.3);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:4px;"></span></button>
   <button class="tab-btn" onclick="switchTab('sources')">Source Access Audit</button>
   <button class="tab-btn" onclick="switchTab('declined')">Declined Opportunities <span id="declinedCount" style="background:rgba(255,255,255,0.3);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:4px;"></span></button>
 </div>
@@ -298,6 +322,15 @@
       <tbody id="tableBody"></tbody>
     </table>
   </div>
+</div>
+
+<div id="tab-accepted" class="tab-content">
+  <div class="summary" id="acceptedSummaryCards"></div>
+  <div class="controls">
+    <label>Search:</label>
+    <input type="text" id="searchAccepted" placeholder="Search accepted opportunities...">
+  </div>
+  <div id="acceptedList"></div>
 </div>
 
 <div id="tab-sources" class="tab-content">
@@ -491,7 +524,7 @@ const allOpportunities = [
 ];
 
 // State: which are declined, which are marked for deletion
-let state = { declined: [], deleted: [] };
+let state = { declined: [], deleted: [], accepted: [] };
 // declined = [{...opp, dateDeclined: "..."}]
 // deleted = [{...opp, dateDeclined: "...", dateDeleted: "..."}]
 
@@ -501,7 +534,7 @@ async function loadState() {
     const r = await fetch(RELAY_URL, { method: "GET" });
     if (r.ok) {
       const d = await r.json();
-      state = { declined: d.declined || [], deleted: d.deleted || [] };
+      state = { declined: d.declined || [], deleted: d.deleted || [], accepted: d.accepted || [] };
       return;
     }
   } catch(e) { /* relay not reachable — fall through */ }
@@ -510,7 +543,7 @@ async function loadState() {
     const resp = await fetch(STATE_URL + "?t=" + Date.now(), { cache: "no-store" });
     if (resp.ok) {
       const d = await resp.json();
-      state = { declined: d.declined || [], deleted: d.deleted || [] };
+      state = { declined: d.declined || [], deleted: d.deleted || [], accepted: d.accepted || [] };
     }
   } catch(e) { /* no state file yet — first run */ }
 }
@@ -547,7 +580,8 @@ function showSaveIndicator(msg) {
 function getActiveOpps() {
   const declinedNames = new Set(state.declined.map(d => d.name));
   const deletedNames = new Set(state.deleted.map(d => d.name));
-  return allOpportunities.filter(o => !declinedNames.has(o.name) && !deletedNames.has(o.name));
+  const acceptedNames = new Set((state.accepted || []).map(a => a.name));
+  return allOpportunities.filter(o => !declinedNames.has(o.name) && !deletedNames.has(o.name) && !acceptedNames.has(o.name));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -607,6 +641,49 @@ function requestDelete(name) {
 // ═══════════════════════════════════════════════════════
 // RENDERING
 // ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// ACCEPT ACTIONS
+// ═══════════════════════════════════════════════════════
+function acceptOpp(name) {
+  const opp = allOpportunities.find(o => o.name === name);
+  if (!opp) return;
+  if ((state.accepted || []).some(a => a.name === name)) return;
+  if (!state.accepted) state.accepted = [];
+  state.accepted.push({...opp, dateAccepted: new Date().toISOString().split("T")[0], comments: [], planStatus: "pending"});
+  renderAll();
+  saveState();
+}
+function unacceptOppIdx(idx) {
+  if (!state.accepted || !state.accepted[idx]) return;
+  state.accepted = state.accepted.filter((_, i) => i !== idx);
+  renderAll();
+  saveState();
+}
+function declineFromAcceptedIdx(idx) {
+  const a = state.accepted && state.accepted[idx];
+  if (!a) return;
+  state.accepted = state.accepted.filter((_, i) => i !== idx);
+  state.declined.push({...a, dateDeclined: new Date().toISOString().split("T")[0]});
+  renderAll();
+  saveState();
+}
+function addAcceptedComment(idx) {
+  const a = state.accepted && state.accepted[idx];
+  if (!a) return;
+  const nameEl = document.getElementById("cname-" + idx);
+  const textEl = document.getElementById("ctext-" + idx);
+  const text = (textEl.value || "").trim();
+  if (!text) { textEl.focus(); return; }
+  const who = (nameEl.value || "").trim() || "Anonymous";
+  if (!a.comments) a.comments = [];
+  a.comments.push({ name: who, text: text, at: new Date().toISOString() });
+  renderAccepted();
+  saveState();
+}
+function escHtml(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function priorityBadge(p) {
   const cls = p >= 18 ? "p-high" : p >= 14 ? "p-med" : "p-low";
   return `<span class="priority ${cls}">${p}/25</span>`;
@@ -626,8 +703,56 @@ function renderPipelineTable(data) {
     <td>${sourceLink(o.source, o.sourceUrl)}</td>
     <td>${o.value}</td><td>${o.fee}</td><td>${o.timing}</td><td>${statusBadge(o.status)}</td>
     <td>${priorityBadge(o.priority)}</td><td>${o.action}</td>
-    <td><button class="btn-decline" onclick="declineOpp('${o.name.replace(/'/g,"\\'")}')">Decline</button></td>
+    <td><div class="btn-group"><button class="btn-accept" onclick="acceptOpp('${o.name.replace(/'/g,"\\'")}')">Accept</button><button class="btn-decline" onclick="declineOpp('${o.name.replace(/'/g,"\\'")}')">Decline</button></div></td>
   </tr>`).join("");
+}
+
+function renderAccepted() {
+  const sEl = document.getElementById("searchAccepted");
+  const search = (sEl ? sEl.value : "").toLowerCase();
+  const acc = state.accepted || [];
+  let html = "";
+  acc.forEach((a, idx) => {
+    if (search && !(a.name.toLowerCase().includes(search) || (a.sector||"").toLowerCase().includes(search) || (a.client||"").toLowerCase().includes(search))) return;
+    const plan = a.planStatus === "done"
+      ? `<span class="plan-badge plan-done">Pursuit plan ready</span>`
+      : `<span class="plan-badge plan-pending">Pursuit plan: pending next scan</span>`;
+    const comments = (a.comments || []).map(c =>
+      `<div class="comment"><span class="meta">${escHtml(c.name)}</span> <span class="ts">${c.at ? new Date(c.at).toLocaleString() : ""}</span><br>${escHtml(c.text)}</div>`
+    ).join("") || `<div class="comment" style="color:#999;">No comments yet.</div>`;
+    html += `<div class="accepted-card">
+      <div class="accepted-head">
+        <div>
+          <div class="accepted-name">${escHtml(a.name)}</div>
+          <div class="accepted-sub">${escHtml(a.sector)} &middot; ${escHtml(a.client)} &middot; ${priorityBadge(a.priority)} &middot; Accepted ${a.dateAccepted || "—"}</div>
+          <div style="margin-top:4px;">${sourceLink(a.source || "", a.sourceUrl || "")}</div>
+          <div style="margin-top:6px;">${plan}</div>
+        </div>
+        <div class="btn-group">
+          <button class="btn-restore" onclick="unacceptOppIdx(${idx})">Move back to Pipeline</button>
+          <button class="btn-decline" onclick="declineFromAcceptedIdx(${idx})">Decline</button>
+        </div>
+      </div>
+      <div class="comments-wrap">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">Comments</div>
+        ${comments}
+        <div class="comment-form">
+          <input class="cname" id="cname-${idx}" placeholder="Your name">
+          <input class="ctext" id="ctext-${idx}" placeholder="Add a comment...">
+          <button onclick="addAcceptedComment(${idx})">Add</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  if (!html) html = `<div style="padding:24px;color:#888;text-align:center;">No accepted opportunities yet. Click "Accept" on an opportunity in the Pipeline Tracker.</div>`;
+  document.getElementById("acceptedList").innerHTML = html;
+  const ac = document.getElementById("acceptedCount");
+  if (ac) ac.textContent = acc.length || "";
+  document.getElementById("acceptedSummaryCards").innerHTML = [
+    {label:"Accepted", value: acc.length, detail:"Moving to active pursuit"},
+    {label:"Pursuit Plans Ready", value: acc.filter(a => a.planStatus === "done").length, detail:"Generated by the scan"},
+    {label:"Awaiting Plan", value: acc.filter(a => a.planStatus !== "done").length, detail:"Generate on next scan"},
+  ].map(c => `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="detail">${c.detail}</div></div>`).join("");
 }
 
 function renderDeclinedTable() {
@@ -686,6 +811,7 @@ function renderSummary() {
 function renderAll() {
   renderSummary();
   applyFilters();
+  renderAccepted();
   renderDeclinedTable();
 }
 
@@ -694,6 +820,7 @@ document.getElementById("filterSector").addEventListener("change", applyFilters)
 document.getElementById("filterStatus").addEventListener("change", applyFilters);
 document.getElementById("searchBox").addEventListener("input", applyFilters);
 document.getElementById("searchDeclined")?.addEventListener("input", renderDeclinedTable);
+document.getElementById("searchAccepted")?.addEventListener("input", renderAccepted);
 
 // Populate filter dropdowns
 const statuses = [...new Set(allOpportunities.map(o => o.status))].sort();
