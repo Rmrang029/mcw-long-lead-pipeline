@@ -291,6 +291,7 @@
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('pipeline')">Pipeline Tracker</button>
   <button class="tab-btn" onclick="switchTab('accepted')">Accepted <span id="acceptedCount" style="background:rgba(255,255,255,0.3);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:4px;"></span></button>
+  <button class="tab-btn" onclick="switchTab('movedToAirtable')">Moved to Airtable <span id="movedCount" style="background:rgba(255,255,255,0.3);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:4px;"></span></button>
   <button class="tab-btn" onclick="switchTab('sources')">Source Access Audit</button>
   <button class="tab-btn" onclick="switchTab('declined')">Declined Opportunities <span id="declinedCount" style="background:rgba(255,255,255,0.3);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:4px;"></span></button>
 </div>
@@ -331,6 +332,24 @@
     <input type="text" id="searchAccepted" placeholder="Search accepted opportunities...">
   </div>
   <div id="acceptedList"></div>
+</div>
+
+<div id="tab-movedToAirtable" class="tab-content">
+  <div class="summary" id="movedSummaryCards"></div>
+  <div class="controls">
+    <label>Search:</label>
+    <input type="text" id="searchMoved" placeholder="Search moved opportunities..." oninput="renderMovedToAirtable()">
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Opportunity</th><th>Sector</th><th>Client / Owner</th>
+        <th>Est. Value</th><th>M&amp;E Fee</th><th>Priority</th>
+        <th>Date Accepted</th><th>Date Moved</th>
+      </tr></thead>
+      <tbody id="movedTableBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <div id="tab-sources" class="tab-content">
@@ -535,7 +554,7 @@ const allOpportunities = [
 ];
 
 // State: which are declined, which are marked for deletion
-let state = { declined: [], deleted: [], accepted: [] };
+let state = { declined: [], deleted: [], accepted: [], movedToAirtable: [] };
 // declined = [{...opp, dateDeclined: "..."}]
 // deleted = [{...opp, dateDeclined: "...", dateDeleted: "..."}]
 
@@ -545,7 +564,7 @@ async function loadState() {
     const r = await fetch(RELAY_URL, { method: "GET" });
     if (r.ok) {
       const d = await r.json();
-      state = { declined: d.declined || [], deleted: d.deleted || [], accepted: d.accepted || [] };
+      state = { declined: d.declined || [], deleted: d.deleted || [], accepted: d.accepted || [], movedToAirtable: d.movedToAirtable || [] };
       return;
     }
   } catch(e) { /* relay not reachable — fall through */ }
@@ -554,7 +573,7 @@ async function loadState() {
     const resp = await fetch(STATE_URL + "?t=" + Date.now(), { cache: "no-store" });
     if (resp.ok) {
       const d = await resp.json();
-      state = { declined: d.declined || [], deleted: d.deleted || [], accepted: d.accepted || [] };
+      state = { declined: d.declined || [], deleted: d.deleted || [], accepted: d.accepted || [], movedToAirtable: d.movedToAirtable || [] };
     }
   } catch(e) { /* no state file yet — first run */ }
 }
@@ -592,7 +611,8 @@ function getActiveOpps() {
   const declinedNames = new Set(state.declined.map(d => d.name));
   const deletedNames = new Set(state.deleted.map(d => d.name));
   const acceptedNames = new Set((state.accepted || []).map(a => a.name));
-  return allOpportunities.filter(o => !declinedNames.has(o.name) && !deletedNames.has(o.name) && !acceptedNames.has(o.name));
+  const movedNames = new Set((state.movedToAirtable || []).map(m => m.name));
+  return allOpportunities.filter(o => !declinedNames.has(o.name) && !deletedNames.has(o.name) && !acceptedNames.has(o.name) && !movedNames.has(o.name));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -819,10 +839,33 @@ function renderSummary() {
   ).join("");
 }
 
+function renderMovedToAirtable() {
+  const search = (document.getElementById("searchMoved")?.value || "").toLowerCase();
+  const moved = state.movedToAirtable || [];
+  let data = moved;
+  if (search) data = data.filter(o => o.name.toLowerCase().includes(search) || (o.sector||"").toLowerCase().includes(search) || (o.client||"").toLowerCase().includes(search));
+  document.getElementById("movedTableBody").innerHTML = data.map(o => `<tr>
+    <td>${escHtml(o.name)}</td><td>${escHtml(o.sector)}</td><td>${escHtml(o.client)}</td>
+    <td>${escHtml(o.value)}</td><td>${escHtml(o.fee)}</td><td>${priorityBadge(o.priority)}</td>
+    <td>${o.dateAccepted || "—"}</td><td>${o.dateMovedToAirtable || "—"}</td>
+  </tr>`).join("");
+  document.getElementById("movedCount").textContent = moved.length || "";
+  // Summary cards
+  const sectors = {};
+  moved.forEach(o => { sectors[o.sector] = (sectors[o.sector] || 0) + 1; });
+  const topSector = Object.entries(sectors).sort((a,b) => b[1] - a[1])[0];
+  document.getElementById("movedSummaryCards").innerHTML = [
+    {label:"Moved to Airtable", value: moved.length, detail:"Pushed to MCW Project Pipeline"},
+    {label:"Top Sector", value: topSector ? topSector[0] : "—", detail: topSector ? topSector[1] + " opportunities" : ""},
+    {label:"Last Moved", value: moved.length ? moved.reduce((a,b) => (a.dateMovedToAirtable||"") > (b.dateMovedToAirtable||"") ? a : b).dateMovedToAirtable || "—" : "—", detail:"Most recent push date"},
+  ].map(c => `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="detail">${c.detail}</div></div>`).join("");
+}
+
 function renderAll() {
   renderSummary();
   applyFilters();
   renderAccepted();
+  renderMovedToAirtable();
   renderDeclinedTable();
 }
 
